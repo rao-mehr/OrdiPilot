@@ -1,0 +1,43 @@
+VERTRETUNGSABRECHNUNG V4 - EasyPark Automatik
+
+ZIEL
+- Parkbestätigungen aus Gmail automatisch erkennen.
+- Datum, Start, Ende, Ort, Zone, Kosten und VAT erfassen.
+- Das von EasyPark selbst verlinkte PDF unverändert herunterladen.
+- PDFs nach Jahr/Monat in Dropbox ablegen.
+- App importiert die Daten beim Dropbox-Sync.
+
+ORDNER
+/Vertretungsabrechnung/
+  Daten bzw. daten.json
+  Honorarnoten/JJJJ/MM/
+  Parkscheine/JJJJ/MM/Bestaetigungen/
+  Parkscheine/JJJJ/MM/Belege/
+  Import/easypark.json
+
+WICHTIG: PARKBESTAETIGUNG VS. QUITTUNG
+Die unmittelbare EasyPark-Mail "Parkbestätigung" wird für die einzelnen Parkvorgänge und deren Statistik genutzt.
+Für Steuerunterlagen ist die spätere EasyPark-Quittung vorzuziehen. In EasyPark unter Benachrichtigungs-/Notification-Einstellungen die automatische Receipt/Quittungs-Zustellung aktivieren. Mehrere Parkvorgänge desselben Tages können von EasyPark in einer Quittung zusammengefasst werden.
+
+GOOGLE APPS SCRIPT EINRICHTEN
+1. script.google.com öffnen und neues Projekt erstellen.
+2. Inhalt von EasyPark_Automation.gs nach Code.gs kopieren.
+3. Projekteinstellungen -> Zeitzone Europe/Vienna.
+4. Unter Script Properties setzen:
+   DROPBOX_APP_KEY       = App Key der Dropbox Developer App
+   DROPBOX_APP_SECRET    = App Secret derselben App
+   DROPBOX_ROOT          = /Vertretungsabrechnung   (optional)
+5. Dropbox-App-Berechtigungen: files.content.read und files.content.write. Für den Hintergrunddienst wird Offline OAuth/Refresh Token verwendet.
+6. getDropboxAuthorizationUrl() einmal ausführen. Die URL aus dem Ausführungsprotokoll öffnen und Dropbox autorisieren.
+7. Den von Dropbox angezeigten Authorization Code als Script Property DROPBOX_AUTH_CODE speichern.
+8. exchangeDropboxAuthorizationCode() einmal ausführen. Der Refresh Token wird anschließend in Script Properties gespeichert; DROPBOX_AUTH_CODE wird gelöscht.
+9. backfillEasyPark2026() einmal ausführen, wenn die bisherigen EasyPark-Parkbestätigungen 2026 übernommen werden sollen.
+10. setupEasyParkAutomation() einmal ausführen. Danach läuft processEasyParkRecent alle 15 Minuten.
+
+SICHERHEIT
+- App Secret und Refresh Token gehören NICHT ins GitHub Repository.
+- Sie liegen ausschließlich in den privaten Google Apps Script Properties.
+- Persönliche Abrechnungsdaten und Belege gehören NICHT ins GitHub Repository, sondern in Dropbox.
+
+KALENDER
+V4 enthält bewusst keinerlei Kalender-ID oder Kalender-Synchronisation.

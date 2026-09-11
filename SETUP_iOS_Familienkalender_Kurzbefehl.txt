@@ -1,0 +1,28 @@
+iOS-FAMILIENKALENDER – EINMALIGE EINRICHTUNG
+
+Ziel
+Die Vertretungs-App verwendet KEINE Kalender-Synchronisation. Stattdessen startet sie einen Apple-Kurzbefehl. Dieser schreibt jeden gewünschten Einsatz direkt in deinen bereits vorhandenen, mit deiner Frau geteilten iCloud-Familienkalender.
+
+1. Auf dem iPhone die App „Kurzbefehle“ öffnen.
+2. Neuen Kurzbefehl erstellen und exakt nennen: Vertretung Familienkalender
+   (Der Name kann in den App-Einstellungen geändert werden.)
+3. Der Kurzbefehl erhält von der Vertretungs-App JSON-Text mit:
+   title, startISO, endISO, location, notes, entryId.
+4. Aktion „Wörterbuch aus Eingabe abrufen“ / „Get Dictionary from Input“ hinzufügen.
+5. Die Werte title, startISO, endISO, location und notes aus dem Wörterbuch abrufen.
+6. startISO und endISO jeweils in ein Datum umwandeln („Daten aus Eingabe abrufen“ / „Get Dates from Input“).
+7. Aktion „Neues Ereignis hinzufügen“ hinzufügen.
+8. Zuordnen:
+   Titel = title
+   Beginn = umgewandeltes startISO
+   Ende = umgewandeltes endISO
+   Ort = location
+   Notizen = notes
+9. WICHTIG: In der Aktion „Neues Ereignis hinzufügen“ bei KALENDER einmalig deinen bestehenden geteilten iCloud-Familienkalender auswählen.
+10. „Beim Ausführen anzeigen“ / „Show Compose Sheet“ ausschalten, wenn der Eintrag nach einem Tap ohne weitere Kalenderauswahl gespeichert werden soll.
+
+Danach:
+In der Vertretungs-App bei einem Einsatz mit Beginn und Ende auf das Kalender-Symbol tippen. Die PWA startet den Kurzbefehl und dieser speichert direkt in den fest gewählten Familienkalender.
+
+Hinweis:
+Der Zielkalender wird nicht in Dropbox und nicht in GitHub gespeichert. Er bleibt ausschließlich in Apple Kurzbefehle hinterlegt. Das vermeidet eine zweite Kalender-Datenquelle.
