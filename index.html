@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#1f4f8f">
+<meta name="theme-color" content="#f2f2f7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Vertretung">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>Vertretungsabrechnung</title>
+<title>Vertretung</title>
 <style>
 @font-face{font-family:"Carlito";font-style:normal;font-weight:400;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-400-normal.woff2") format("woff2")}
 @font-face{font-family:"Carlito";font-style:normal;font-weight:700;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-700-normal.woff2") format("woff2")}
@@ -23,74 +23,177 @@
 @media(max-width:620px){body{padding-bottom:82px}.app{padding:12px 12px 6px}.grid4,.grid6{grid-template-columns:repeat(2,1fr);gap:9px}.kpi{padding:13px}.kpi .value{font-size:19px}.kpi .label{font-size:11.5px}.formgrid{grid-template-columns:1fr}.formgrid .wide{grid-column:auto}header{align-items:flex-start;flex-direction:column;margin-bottom:10px}.brand h1{font-size:20px}.sub{font-size:12px}.actions{width:100%}.actions .btn{flex:1;padding:9px 10px}.tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;width:100%;max-width:none;margin:0;padding:6px 5px calc(6px + env(safe-area-inset-bottom));border-radius:0;background:rgba(245,247,251,.97);border-top:1px solid #dde2ea;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;box-shadow:0 -6px 20px rgba(20,35,55,.08)}.tab{font-size:10px;padding:7px 2px;white-space:normal;line-height:1.15;min-width:0}.tab.active{background:#e8f0fb;box-shadow:none}.section{padding:12px}.section-head{align-items:flex-start}.table-wrap{display:none}.mobile-list{display:block}.filters .field{flex:1 1 130px;min-width:0}.invoice-preview{padding:30px 38px;font-size:11px}.hn-title{font-size:15px}.hn-number,.hn-date{font-size:11px;margin-top:12px}.hn-section-title{font-size:13px;margin-bottom:12px}.hn-name,.hn-line{margin-bottom:10px}.hn-block-gap{height:20px}.hn-body{margin-top:26px}.hn-body p{margin-bottom:12px}.hn-summary{grid-template-columns:14px 92px 1fr;column-gap:0;row-gap:5px;margin:20px 0 24px 10px}.hn-signoff{margin-top:34px}.chart-card{min-height:250px}.chart-wrap{height:180px}.modal{padding:16px}.modal-actions{position:sticky;bottom:-16px;background:#fff;padding:10px 0 16px}.modal-actions .btn{flex:1}.install-hint{display:block}.cloud-box{padding:12px}}
 @media(max-width:620px){dialog#entryDialog{width:100%;max-width:none;margin:auto 0 0;border-radius:20px 20px 0 0;max-height:92dvh}.entry-modal-head{padding:16px 16px 10px}.entry-content{padding:13px 16px 2px}.entry-modal-actions{position:sticky;bottom:0;padding:10px 16px calc(12px + env(safe-area-inset-bottom));z-index:3}.entry-modal-actions .btn{flex:1}.entry-summary-hours{font-size:21px}.entry-summary-gross{font-size:15px}}
 @media print{body{background:#fff}.app>header,.tabs,.no-print,.section:not(.printable){display:none!important}.panel{display:none!important}#panel-invoice{display:block!important}.invoice-preview{border:0;box-shadow:none;margin:0;width:210mm;height:297mm;aspect-ratio:auto;padding:17mm 25.4mm;font-size:12pt}.app{padding:0;max-width:none}.printable{padding:0;margin:0;border:0;box-shadow:none}}
+
+/* ===== V6 iOS UI layer ===== */
+:root{
+  --bg:#f2f2f7;--card:#ffffff;--ink:#111114;--muted:#6e6e73;--line:#d9d9df;
+  --accent:#007aff;--accent2:#eaf3ff;--ok:#248a3d;--warn:#c77700;--danger:#ff3b30;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,0,0,.035);--r:18px;
+}
+html{background:var(--bg)}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+.app{max-width:1180px;padding:20px 22px 34px}
+header{margin-bottom:14px;padding:2px 2px 4px}
+.brand{gap:10px}.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(145deg,#0a84ff,#0066cc);box-shadow:none;font-size:14px}
+.brand h1{font-size:24px;letter-spacing:-.02em}.brand .sub{font-size:12.5px;color:#8e8e93}
+.actions{display:none}
+.btn{border:0;background:#fff;color:var(--accent);border-radius:12px;font-weight:650;min-height:42px;box-shadow:inset 0 0 0 1px rgba(60,60,67,.12)}
+.btn.primary{background:var(--accent);color:#fff;box-shadow:none}.btn.soft{background:rgba(0,122,255,.10);color:var(--accent);box-shadow:none}
+.tabs{background:rgba(118,118,128,.12);padding:4px;border-radius:12px;margin-bottom:18px;gap:2px}
+.tab{display:flex;align-items:center;gap:7px;color:#636366;border-radius:9px;padding:8px 12px;font-weight:650}
+.tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.tab-icon{font-size:16px;line-height:1}.tab-label{line-height:1}
+.card{border:0;box-shadow:var(--shadow);border-radius:20px}
+.section{padding:18px}.section h2{font-size:19px;letter-spacing:-.015em}.section-head{margin-bottom:12px}
+.v6-page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 2px 14px}
+.v6-page-title{font-size:32px;line-height:1.08;letter-spacing:-.035em;font-weight:800;margin:0}
+.v6-page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.v6-hero{padding:22px;background:linear-gradient(180deg,#fff,#fbfdff);overflow:hidden;position:relative}
+.v6-hero:after{content:"";position:absolute;right:-50px;top:-65px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(0,122,255,.12),rgba(0,122,255,0) 68%);pointer-events:none}
+.v6-hero-kicker{font-size:13px;color:var(--muted);font-weight:650;margin-bottom:4px}
+.v6-hero-main{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;position:relative;z-index:1}
+.v6-hero-amount{font-size:39px;line-height:1.02;letter-spacing:-.04em;font-weight:820}
+.v6-hero-hours{font-size:16px;color:var(--muted);font-weight:650;margin-top:6px}
+.v6-hero-stats{display:grid;grid-template-columns:repeat(2,minmax(110px,1fr));gap:8px 22px;text-align:right}
+.v6-mini-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.035em;font-weight:700}
+.v6-mini-value{font-size:16px;font-weight:760;margin-top:1px}
+.v6-hero-actions{display:flex;gap:9px;margin-top:18px;position:relative;z-index:1}.v6-hero-actions .btn{min-width:145px}
+.v6-section{margin-top:14px;background:#fff;border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.v6-section-head{padding:15px 17px 10px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.v6-section-title{font-size:17px;font-weight:760;letter-spacing:-.01em}.v6-section-action{border:0;background:transparent;color:var(--accent);font-weight:650;padding:5px}
+.v6-list{background:#fff}.v6-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 17px;min-height:58px;border-top:1px solid rgba(60,60,67,.12)}
+.v6-list-row:first-child{border-top:0}.v6-row-main{min-width:0}.v6-row-title{font-size:15px;font-weight:680}.v6-row-sub{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v6-row-right{text-align:right;flex:0 0 auto}.v6-row-amount{font-weight:740}.v6-chevron{color:#c7c7cc;font-size:20px;margin-left:5px}
+.v6-open-empty{padding:14px 17px;color:var(--muted);font-size:13px;border-top:1px solid rgba(60,60,67,.12)}
+.v6-year-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:0}.v6-year-cell{padding:15px 14px;text-align:center;border-left:1px solid rgba(60,60,67,.12)}.v6-year-cell:first-child{border-left:0}.v6-year-cell strong{display:block;font-size:17px}.v6-year-cell span{font-size:11px;color:var(--muted)}
+.v6-more{margin-top:14px;background:#fff;border-radius:20px;box-shadow:var(--shadow);overflow:hidden}.v6-more>summary{list-style:none;padding:15px 17px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center}.v6-more>summary::-webkit-details-marker{display:none}.v6-more>summary:after{content:"›";font-size:22px;color:#c7c7cc;transform:rotate(90deg)}.v6-more[open]>summary:after{transform:rotate(-90deg)}.v6-more-body{padding:0 14px 15px}.v6-more .grid6{grid-template-columns:repeat(3,1fr)}
+.kpi{border-radius:16px;box-shadow:none;border:1px solid rgba(60,60,67,.10);background:#fafafa}.kpi .value{font-size:21px}.kpi .label{font-size:11.5px}
+.chart-card{box-shadow:none;border:1px solid rgba(60,60,67,.10);border-radius:16px}
+.v6-entry-shell{background:transparent;box-shadow:none;padding:0}.v6-entry-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.v6-entry-toolbar .field{background:#fff;border-radius:13px;padding:8px 10px;box-shadow:var(--shadow)}.v6-entry-toolbar input,.v6-entry-toolbar select{border:0;background:transparent;padding:2px 0;min-height:30px;box-shadow:none}.v6-entry-toolbar .field label{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+.mobile-card{border:0;border-radius:16px;box-shadow:var(--shadow);padding:14px 15px;margin-bottom:9px}.mobile-card .row{border-top:1px solid rgba(60,60,67,.12)}
+.table-wrap{border:0;border-radius:18px;box-shadow:var(--shadow)}table{border-radius:18px;overflow:hidden}th{background:#fbfbfd;color:#8e8e93;font-size:11px}th,td{border-bottom-color:rgba(60,60,67,.10)}
+input,select,textarea{border-color:rgba(60,60,67,.18);border-radius:11px;background:#fff}input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+dialog{border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.32)}dialog::backdrop{background:rgba(0,0,0,.28);backdrop-filter:blur(2px)}
+.entry-modal-head{background:#fff}.entry-date-card{background:#f2f2f7;border:0}.entry-summary{border:0;background:#eef6ff}.entry-advanced{border-color:rgba(60,60,67,.14)}
+.settings-grid .card{box-shadow:var(--shadow);border:0}.cloud-box{background:#f7f7fa;border:0}
+.badge{background:#f2f2f7}.badge.auto{background:#eaf3ff;color:#0066cc}.badge.ok{background:#edf8ef;color:#248a3d}.badge.warn{background:#fff5df;color:#9a6200}.badge.missing{background:#fff0ef;color:#c32d24}
+.v6-panel-card{background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:18px}
+@media(max-width:900px){.v6-more .grid6{grid-template-columns:repeat(2,1fr)}.v6-year-strip{grid-template-columns:repeat(2,1fr)}.v6-year-cell:nth-child(3){border-left:0;border-top:1px solid rgba(60,60,67,.12)}.v6-year-cell:nth-child(4){border-top:1px solid rgba(60,60,67,.12)}}
+@media(max-width:620px){
+  body{padding-bottom:84px}.app{padding:10px 12px 8px}.brand .sub{display:none}.logo{width:34px;height:34px}.brand h1{font-size:19px}header{margin-bottom:6px;flex-direction:row;align-items:center}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:80;width:100%;margin:0;padding:5px 5px calc(5px + env(safe-area-inset-bottom));border-radius:0;background:rgba(249,249,249,.88);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid rgba(60,60,67,.20);display:grid;grid-template-columns:repeat(5,1fr);box-shadow:none}
+  .tab{display:flex;flex-direction:column;gap:3px;justify-content:center;padding:5px 2px;background:transparent!important;box-shadow:none!important;color:#8e8e93;font-size:9.5px}.tab.active{color:var(--accent)}.tab-icon{font-size:19px}.tab-label{font-size:9.5px;font-weight:620}
+  .v6-page-head{margin:5px 2px 12px}.v6-page-title{font-size:30px}.v6-page-sub{display:none}
+  .v6-hero{padding:18px 17px}.v6-hero-main{display:block}.v6-hero-amount{font-size:36px}.v6-hero-stats{margin-top:17px;text-align:left;grid-template-columns:repeat(2,1fr)}.v6-hero-actions{display:grid;grid-template-columns:1.2fr 1fr}.v6-hero-actions .btn{min-width:0;padding:10px 9px}
+  .v6-section{border-radius:18px}.v6-section-head{padding:14px 15px 9px}.v6-list-row{padding:12px 15px}.v6-year-strip{grid-template-columns:repeat(2,1fr)}
+  .v6-more{border-radius:18px}.v6-more-body{padding:0 10px 12px}.v6-more .grid6{grid-template-columns:repeat(2,1fr);gap:8px}.kpi{padding:12px}.kpi .value{font-size:18px}
+  .v6-entry-toolbar{display:grid;grid-template-columns:1fr 1fr}.v6-entry-toolbar .field{min-width:0;padding:7px 9px}.v6-entry-toolbar .field:last-child{grid-column:1/-1}.v6-entry-toolbar input,.v6-entry-toolbar select{width:100%}
+  .v6-entry-shell .table-wrap{display:none}.v6-entry-shell .mobile-list{display:block}
+}
+
 </style>
 </head>
 <body>
 <div class="app">
 <header>
-  <div class="brand"><div class="logo">VA</div><div><h1>Vertretungsabrechnung</h1><div class="sub">Einsätze · Analyse · Parken · Honorarnoten · Dropbox</div></div></div>
-  <div class="actions"><button class="btn soft" id="quickAdd">+ Neuer Einsatz</button><button class="btn primary" id="quickPdf">Honorarnote</button></div>
+  <div class="brand"><div class="logo">VA</div><div><h1>Vertretungsabrechnung</h1><div class="sub">Persönliche Abrechnung · Dropbox synchronisiert</div></div></div>
 </header>
-<nav class="tabs no-print">
-  <button class="tab active" data-tab="dashboard">Statistik</button>
-  <button class="tab" data-tab="entries">Einsätze</button>
-  <button class="tab" data-tab="parking">Parken</button>
-  <button class="tab" data-tab="invoice">Honorarnote</button>
-  <button class="tab" data-tab="settings">Einstellungen</button>
+<nav class="tabs no-print" aria-label="Hauptnavigation">
+  <button class="tab active" data-tab="dashboard"><span class="tab-icon">⌂</span><span class="tab-label">Übersicht</span></button>
+  <button class="tab" data-tab="entries"><span class="tab-icon">☷</span><span class="tab-label">Einsätze</span></button>
+  <button class="tab" data-tab="parking"><span class="tab-icon">€</span><span class="tab-label">Finanzen</span></button>
+  <button class="tab" data-tab="invoice"><span class="tab-icon">▤</span><span class="tab-label">Dokumente</span></button>
+  <button class="tab" data-tab="settings"><span class="tab-icon">•••</span><span class="tab-label">Mehr</span></button>
 </nav>
 <section class="panel active" id="panel-dashboard">
-  <div class="filters no-print" style="margin-bottom:12px"><div class="field"><label>Auswertungsjahr</label><select id="dashYear"></select></div></div>
-  <div class="grid6">
-    <div class="card kpi"><div class="label">Verrechenbare Stunden</div><div class="value" id="kpiHours">0 h</div><div class="hint">abgeschlossene Einsätze</div></div>
-    <div class="card kpi"><div class="label">Bruttohonorar</div><div class="value" id="kpiGross">0 €</div><div class="hint">vor Rücklage</div></div>
-    <div class="card kpi"><div class="label">Rücklage</div><div class="value" id="kpiReserve">0 €</div><div class="hint" id="reserveHint">50 %</div></div>
-    <div class="card kpi"><div class="label">Verfügbar</div><div class="value" id="kpiAvailable">0 €</div><div class="hint">nach Rücklage</div></div>
-    <div class="card kpi"><div class="label">Parkkosten</div><div class="value" id="kpiParking">0 €</div><div class="hint">erfasste Parkvorgänge</div></div>
-    <div class="card kpi"><div class="label">Nach Parkkosten</div><div class="value" id="kpiAfterParking">0 €</div><div class="hint">verfügbar minus Parken</div></div>
+  <div class="v6-page-head"><div><h2 class="v6-page-title">Übersicht</h2><div class="v6-page-sub">Das Wichtigste zuerst. Details bleiben einen Tap entfernt.</div></div></div>
+
+  <div class="card v6-hero">
+    <div class="v6-hero-kicker" id="v6MonthTitle">Aktueller Monat</div>
+    <div class="v6-hero-main">
+      <div><div class="v6-hero-amount" id="v6MonthGross">0 €</div><div class="v6-hero-hours" id="v6MonthHours">0 h verrechenbar</div></div>
+      <div class="v6-hero-stats">
+        <div><div class="v6-mini-label">Parken</div><div class="v6-mini-value" id="v6MonthParking">0 €</div></div>
+        <div><div class="v6-mini-label">Einsätze</div><div class="v6-mini-value" id="v6MonthCount">0</div></div>
+      </div>
+    </div>
+    <div class="v6-hero-actions no-print"><button class="btn primary" id="quickAdd">+ Neuer Einsatz</button><button class="btn soft" id="quickPdf">Honorarnote</button></div>
   </div>
-  <div class="grid6" style="margin-top:14px">
-    <div class="card kpi"><div class="label">Erledigte Einsätze</div><div class="value" id="kpiDoneCount">0</div><div class="hint">im ausgewählten Jahr</div></div>
-    <div class="card kpi"><div class="label">Geplante Einsätze</div><div class="value" id="kpiPlannedCount">0</div><div class="hint">noch ohne Abrechnung</div></div>
-    <div class="card kpi"><div class="label">Ø Stunden / Einsatz</div><div class="value" id="kpiAvgHours">0 h</div><div class="hint">nur erledigte Einsätze</div></div>
-    <div class="card kpi"><div class="label">Ø Honorar / Einsatz</div><div class="value" id="kpiAvgGross">0 €</div><div class="hint">nur erledigte Einsätze</div></div>
-    <div class="card kpi"><div class="label">Ø Parkkosten / Einsatz</div><div class="value" id="kpiAvgParking">0 €</div><div class="hint">bezogen auf erledigte Einsätze</div></div>
-    <div class="card kpi"><div class="label">Belegquote Parken</div><div class="value" id="kpiReceiptRate">0 %</div><div class="hint">Parkvorgänge mit PDF/Beleg</div></div>
+
+  <div class="v6-section">
+    <div class="v6-section-head"><div class="v6-section-title">Einsätze</div><button class="v6-section-action no-print" type="button" id="v6ShowEntries">Alle anzeigen</button></div>
+    <div class="v6-list" id="v6OverviewEntries"><div class="v6-open-empty">Noch keine Einsätze vorhanden.</div></div>
   </div>
-  <div class="grid6" style="margin-top:14px">
-    <div class="card kpi"><div class="label">Arbeitstage</div><div class="value" id="kpiWorkdays">0</div><div class="hint">Tage mit erledigtem Einsatz</div></div>
-    <div class="card kpi"><div class="label">Honorar / Arbeitsstunde</div><div class="value" id="kpiGrossPerHour">0 €</div><div class="hint">effektiver Brutto-Stundenertrag</div></div>
-    <div class="card kpi"><div class="label">Parken / Arbeitsstunde</div><div class="value" id="kpiParkingPerHour">0 €</div><div class="hint">direkte Parkkosten je Stunde</div></div>
-    <div class="card kpi"><div class="label">Erfasste Parkdauer</div><div class="value" id="kpiParkingHours">0 h</div><div class="hint">Summe der Parkzeiten</div></div>
-    <div class="card kpi"><div class="label">Nicht zugeordnet</div><div class="value" id="kpiUnassignedParking">0</div><div class="hint">Parkvorgänge ohne Einsatz</div></div>
-    <div class="card kpi emphasis"><div class="label">Jahresprognose</div><div class="value" id="kpiForecast">0 €</div><div class="hint" id="forecastHint">inkl. geplanter Termine</div></div>
+
+  <div class="v6-section" id="v6OpenSection">
+    <div class="v6-section-head"><div class="v6-section-title">Offen</div></div>
+    <div class="v6-list" id="v6OpenItems"><div class="v6-open-empty">Aktuell nichts offen.</div></div>
   </div>
-  <div class="charts" style="margin-top:14px">
-    <div class="card chart-card"><div class="chart-title">Honorar pro Monat</div><div class="chart-sub">Bruttohonorar aus abgeschlossenen Einsätzen</div><div class="chart-wrap"><canvas id="grossChart"></canvas></div></div>
-    <div class="card chart-card"><div class="chart-title">Arbeitszeit & Parkkosten</div><div class="chart-sub">Stunden und Parkkosten im Jahresverlauf</div><div class="chart-wrap"><canvas id="hoursChart"></canvas></div></div>
-    <div class="card chart-card"><div class="chart-title">Kumuliertes Jahreshonorar</div><div class="chart-sub">Wie sich dein Honorar über das Jahr aufbaut</div><div class="chart-wrap"><canvas id="cumulativeChart"></canvas></div></div>
-    <div class="card chart-card"><div class="chart-title">Einsätze nach Wochentag</div><div class="chart-sub">Verteilung der abgeschlossenen Vertretungen</div><div class="chart-wrap"><canvas id="weekdayChart"></canvas></div></div>
+
+  <div class="v6-section">
+    <div class="v6-section-head"><div class="v6-section-title" id="v6YearTitle">2026 bisher</div></div>
+    <div class="v6-year-strip">
+      <div class="v6-year-cell"><strong id="v6YearGross">0 €</strong><span>Honorar</span></div>
+      <div class="v6-year-cell"><strong id="v6YearHours">0 h</strong><span>Stunden</span></div>
+      <div class="v6-year-cell"><strong id="v6YearReserve">0 €</strong><span>Rücklage</span></div>
+      <div class="v6-year-cell"><strong id="v6YearAfter">0 €</strong><span>nach Parken</span></div>
+    </div>
   </div>
-  <div class="card section">
-    <div class="section-head"><h2>Monatsübersicht</h2><span class="help">Geplante Termine ohne Stunden werden nicht eingerechnet.</span></div>
-    <div class="table-wrap"><table><thead><tr><th>Monat</th><th class="num">Stunden</th><th class="num">Brutto</th><th class="num">Rücklage</th><th class="num">Verfügbar</th><th class="num">Parken</th><th class="num">Parkvorgänge</th><th class="num">€ / h</th><th class="num">Nach Parken</th><th class="num">Einsätze</th><th class="num">Geplant / offen</th></tr></thead><tbody id="monthRows"></tbody></table></div>
-    <div class="mobile-list" id="monthCards"></div>
-  </div>
+
+  <details class="v6-more">
+    <summary>Weitere Statistiken</summary>
+    <div class="v6-more-body">
+      <div class="filters no-print" style="margin:0 0 12px 2px"><div class="field"><label>Auswertungsjahr</label><select id="dashYear"></select></div></div>
+      <div class="grid6">
+        <div class="card kpi"><div class="label">Verrechenbare Stunden</div><div class="value" id="kpiHours">0 h</div><div class="hint">abgeschlossene Einsätze</div></div>
+        <div class="card kpi"><div class="label">Bruttohonorar</div><div class="value" id="kpiGross">0 €</div><div class="hint">vor Rücklage</div></div>
+        <div class="card kpi"><div class="label">Rücklage</div><div class="value" id="kpiReserve">0 €</div><div class="hint" id="reserveHint">50 %</div></div>
+        <div class="card kpi"><div class="label">Verfügbar</div><div class="value" id="kpiAvailable">0 €</div><div class="hint">nach Rücklage</div></div>
+        <div class="card kpi"><div class="label">Parkkosten</div><div class="value" id="kpiParking">0 €</div><div class="hint">erfasste Parkvorgänge</div></div>
+        <div class="card kpi"><div class="label">Nach Parkkosten</div><div class="value" id="kpiAfterParking">0 €</div><div class="hint">verfügbar minus Parken</div></div>
+        <div class="card kpi"><div class="label">Erledigte Einsätze</div><div class="value" id="kpiDoneCount">0</div><div class="hint">im ausgewählten Jahr</div></div>
+        <div class="card kpi"><div class="label">Geplante Einsätze</div><div class="value" id="kpiPlannedCount">0</div><div class="hint">noch ohne Abrechnung</div></div>
+        <div class="card kpi"><div class="label">Ø Stunden / Einsatz</div><div class="value" id="kpiAvgHours">0 h</div><div class="hint">nur erledigte Einsätze</div></div>
+        <div class="card kpi"><div class="label">Ø Honorar / Einsatz</div><div class="value" id="kpiAvgGross">0 €</div><div class="hint">nur erledigte Einsätze</div></div>
+        <div class="card kpi"><div class="label">Ø Parkkosten / Einsatz</div><div class="value" id="kpiAvgParking">0 €</div><div class="hint">bezogen auf erledigte Einsätze</div></div>
+        <div class="card kpi"><div class="label">Belegquote Parken</div><div class="value" id="kpiReceiptRate">0 %</div><div class="hint">Parkvorgänge mit PDF/Beleg</div></div>
+        <div class="card kpi"><div class="label">Arbeitstage</div><div class="value" id="kpiWorkdays">0</div><div class="hint">Tage mit erledigtem Einsatz</div></div>
+        <div class="card kpi"><div class="label">Honorar / Arbeitsstunde</div><div class="value" id="kpiGrossPerHour">0 €</div><div class="hint">effektiver Brutto-Stundenertrag</div></div>
+        <div class="card kpi"><div class="label">Parken / Arbeitsstunde</div><div class="value" id="kpiParkingPerHour">0 €</div><div class="hint">direkte Parkkosten je Stunde</div></div>
+        <div class="card kpi"><div class="label">Erfasste Parkdauer</div><div class="value" id="kpiParkingHours">0 h</div><div class="hint">Summe der Parkzeiten</div></div>
+        <div class="card kpi"><div class="label">Nicht zugeordnet</div><div class="value" id="kpiUnassignedParking">0</div><div class="hint">Parkvorgänge ohne Einsatz</div></div>
+        <div class="card kpi emphasis"><div class="label">Jahresprognose</div><div class="value" id="kpiForecast">0 €</div><div class="hint" id="forecastHint">inkl. geplanter Termine</div></div>
+      </div>
+      <div class="charts" style="margin-top:12px">
+        <div class="card chart-card"><div class="chart-title">Honorar pro Monat</div><div class="chart-sub">Bruttohonorar aus abgeschlossenen Einsätzen</div><div class="chart-wrap"><canvas id="grossChart"></canvas></div></div>
+        <div class="card chart-card"><div class="chart-title">Arbeitszeit & Parkkosten</div><div class="chart-sub">Stunden und Parkkosten im Jahresverlauf</div><div class="chart-wrap"><canvas id="hoursChart"></canvas></div></div>
+        <div class="card chart-card"><div class="chart-title">Kumuliertes Jahreshonorar</div><div class="chart-sub">Wie sich dein Honorar über das Jahr aufbaut</div><div class="chart-wrap"><canvas id="cumulativeChart"></canvas></div></div>
+        <div class="card chart-card"><div class="chart-title">Einsätze nach Wochentag</div><div class="chart-sub">Verteilung der abgeschlossenen Vertretungen</div><div class="chart-wrap"><canvas id="weekdayChart"></canvas></div></div>
+      </div>
+      <div class="card section" style="box-shadow:none;border:1px solid rgba(60,60,67,.10)">
+        <div class="section-head"><h2>Monatsübersicht</h2><span class="help">Geplante Termine ohne Stunden werden nicht eingerechnet.</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Monat</th><th class="num">Stunden</th><th class="num">Brutto</th><th class="num">Rücklage</th><th class="num">Verfügbar</th><th class="num">Parken</th><th class="num">Parkvorgänge</th><th class="num">€ / h</th><th class="num">Nach Parken</th><th class="num">Einsätze</th><th class="num">Geplant / offen</th></tr></thead><tbody id="monthRows"></tbody></table></div>
+        <div class="mobile-list" id="monthCards"></div>
+      </div>
+    </div>
+  </details>
 </section>
 <section class="panel" id="panel-entries">
-  <div class="card section"><div class="section-head"><div><h2>Einsätze</h2><div class="help">Beginn + Ende + Pause oder Stunden direkt eingeben.</div></div><button class="btn primary no-print" id="addEntry">+ Einsatz</button></div>
-    <div class="filters no-print" style="margin-bottom:12px"><div class="field"><label>Jahr</label><select id="entryYear"></select></div><div class="field"><label>Monat</label><select id="entryMonth"><option value="">Alle Monate</option></select></div><div class="field" style="min-width:220px"><label>Suche</label><input id="entrySearch" placeholder="Datum oder Bemerkung"></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Termin</th><th>Beginn</th><th>Ende</th><th class="num">Pause</th><th class="num">Stunden</th><th class="num">Satz</th><th class="num">Brutto</th><th class="num">Parken</th><th class="num">Nach Parken</th><th>Status</th><th>Bemerkung</th><th></th></tr></thead><tbody id="entryRows"></tbody></table></div><div class="mobile-list" id="entryCards"></div>
+  <div class="v6-page-head"><div><h2 class="v6-page-title">Einsätze</h2><div class="v6-page-sub">Termine, Arbeitszeit und Abrechnung in einer ruhigen Liste.</div></div><button class="btn primary no-print" id="addEntry">+ Einsatz</button></div>
+  <div class="v6-entry-shell">
+    <div class="v6-entry-toolbar no-print"><div class="field"><label>Jahr</label><select id="entryYear"></select></div><div class="field"><label>Monat</label><select id="entryMonth"><option value="">Alle Monate</option></select></div><div class="field"><label>Suche</label><input id="entrySearch" placeholder="Datum oder Bemerkung"></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Termin</th><th>Beginn</th><th>Ende</th><th class="num">Pause</th><th class="num">Stunden</th><th class="num">Satz</th><th class="num">Brutto</th><th class="num">Parken</th><th class="num">Nach Parken</th><th>Status</th><th>Bemerkung</th><th></th></tr></thead><tbody id="entryRows"></tbody></table></div>
+    <div class="mobile-list" id="entryCards"></div>
   </div>
 </section>
 <section class="panel" id="panel-parking">
-  <div class="card section"><div class="section-head"><div><h2>Parkscheine & Parkkosten</h2><div class="help">EasyPark-Parkvorgänge können automatisch aus Gmail übernommen werden; offizielle PDFs werden monatsweise in Dropbox archiviert. Manuelle Belege bleiben zusätzlich möglich.</div></div><button class="btn primary no-print" id="addParking">+ Parkvorgang</button></div>
+  <div class="card section"><div class="section-head"><div><h2>Finanzen · Parken & Ausgaben</h2><div class="help">EasyPark-Parkvorgänge können automatisch aus Gmail übernommen werden; offizielle PDFs werden monatsweise in Dropbox archiviert. Manuelle Belege bleiben zusätzlich möglich.</div></div><button class="btn primary no-print" id="addParking">+ Parkvorgang</button></div>
     <div class="filters no-print" style="margin-bottom:12px"><div class="field"><label>Jahr</label><select id="parkingYear"></select></div><div class="field"><label>Monat</label><select id="parkingMonth"><option value="">Alle Monate</option></select></div><div class="field"><label>Anbieter</label><select id="parkingProviderFilter"><option value="">Alle</option><option>HANDYPARKEN</option><option>EasyPark</option><option>Parkschein</option><option>Sonstiges</option></select></div></div>
     <div class="parking-quick" style="margin-bottom:12px"><span class="badge">Summe: <strong id="parkingTotal">0 €</strong></span><span class="badge">Vorgänge: <strong id="parkingCount">0</strong></span><span class="badge" id="parkingReceiptBadge">Belege: 0</span><span class="badge" id="easyParkAutoBadge">EasyPark Auto: bereit</span><span class="badge auto" id="parkingAssignedBadge">Automatisch zugeordnet: 0</span><span class="badge missing" id="parkingUnassignedBadge">Ohne Zuordnung: 0</span><button class="btn soft no-print" id="reassignParking">Zuordnung neu berechnen</button></div>
     <div class="table-wrap"><table><thead><tr><th>Datum</th><th>Zeit</th><th>Anbieter</th><th>Ort / Zone</th><th class="num">Betrag</th><th>Zugeordneter Einsatz</th><th>Dokument</th><th>Bemerkung</th><th></th></tr></thead><tbody id="parkingRows"></tbody></table></div><div class="mobile-list" id="parkingCards"></div>
   </div>
 </section>
 <section class="panel" id="panel-invoice">
-  <div class="card section printable"><div class="section-head no-print"><div><h2>Honorarnote erstellen</h2><div class="help">Monat auswählen, Vorschau prüfen und PDF direkt erzeugen.</div></div><button class="btn primary" id="makePdf">PDF erstellen & archivieren</button></div>
+  <div class="card section printable"><div class="section-head no-print"><div><h2>Dokumente · Honorarnote</h2><div class="help">Monat auswählen, Vorschau prüfen und PDF direkt erzeugen.</div></div><button class="btn primary" id="makePdf">PDF erstellen & archivieren</button></div>
     <div class="filters no-print" style="margin-bottom:14px"><div class="field"><label>Jahr</label><select id="invYear"></select></div><div class="field"><label>Monat</label><select id="invMonth"></select></div><div class="field"><label>Honorarnummer</label><input id="invNumber"></div><div class="field"><label>Ausstellungsdatum</label><input id="invDate" type="date"></div></div>
     <div class="help no-print" style="margin-bottom:10px">Vorlage: Original-Word-Stil mit den gleichen Seitenmaßen, Abständen und Calibri-Metriken. Die Vorschau verwendet Calibri, wenn sie auf dem Gerät vorhanden ist; die PDF nutzt Carlito als metrisch kompatible, geräteunabhängige Einbettung.</div><div id="invoiceWarning" class="note no-print" style="display:none;margin-bottom:14px"></div><div class="invoice-preview" id="invoicePreview"></div>
   </div>
@@ -105,7 +208,7 @@
     <div class="card"><h3>iOS Familienkalender</h3><div class="cloud-box"><div class="help">Keine Kalender-Synchronisation und kein zweiter Kalender. Die App startet einen Apple-Kurzbefehl, der den Termin direkt in deinen bestehenden geteilten iCloud-Kalender schreibt. Der Zielkalender wird einmalig im Kurzbefehl fest ausgewählt.</div><div class="formgrid" style="margin-top:12px"><div class="field wide"><label>Name des Apple-Kurzbefehls</label><input id="setIOSShortcutName" placeholder="Vertretung Familienkalender"></div><div class="field wide"><label>Titel des Kalendereintrags</label><input id="setCalendarEventTitle" placeholder="z. B. Vertretung"></div><div class="field wide"><label>Ort des Kalendereintrags</label><input id="setCalendarEventLocation" placeholder="Adresse der Ordination"></div><div class="field wide"><label><input id="setCalendarButtonEnabled" type="checkbox" style="min-height:auto;width:auto;margin-right:7px"> „Zum Familienkalender“-Schaltfläche bei Einsätzen anzeigen</label></div></div><div class="sync-actions"><button class="btn" id="openIOSShortcut">Apple-Kurzbefehl öffnen</button></div><div class="help" style="margin-top:10px">Wichtig: Der Zielkalender wird absichtlich <strong>nicht</strong> als Kalender-ID in Dropbox gespeichert. Er ist ausschließlich im Apple-Kurzbefehl auf deinen Geräten hinterlegt. Dadurch bleibt dein vorhandener Familienkalender die einzige Kalenderquelle.</div></div></div>
     <div class="card"><h3>Daten & Sicherung</h3><p class="help">Zusätzlich zur Cloud kannst du jederzeit ein lokales JSON-Backup exportieren.</p><div class="actions"><button class="btn" id="exportBackup">Backup exportieren</button><label class="btn" for="importBackup">Backup importieren</label><input id="importBackup" type="file" accept=".json" hidden><button class="btn danger" id="resetData">Auf Excel-Ausgangsdaten zurücksetzen</button></div></div>
     <div class="card"><h3>iPhone / iPad</h3><p class="help">Nach Veröffentlichung über HTTPS in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach startet die App wie eine normale App. Für „Zum Familienkalender“ wird einmalig der Apple-Kurzbefehl eingerichtet.</p><div class="note install-hint">Die lokale HTML-Datei eignet sich zum Testen. Für Homescreen + Dropbox-Sync ist die veröffentlichte HTTPS-Version vorgesehen.</div></div>
-  </div><div class="footer-note">Version 5.2 · Full-Dropbox-Struktur · neue Einsatzmaske · automatische Parkzuordnung · erweiterte Statistik · EasyPark · iOS-Familienkalender.</div>
+  </div><div class="footer-note">Version 6.0 · iOS Redesign · Full Dropbox · EasyPark · Honorarnoten · mobile PWA.</div>
 </section>
 </div>
 <dialog id="entryDialog"><form method="dialog" class="entry-modal" id="entryForm"><div class="entry-modal-head"><h3 id="entryModalTitle">Neuer Einsatz</h3><div class="help" id="entryModalSub">Heute eintragen – Datum bei Bedarf über den Kalender ändern.</div></div><div class="entry-content"><div class="entry-date-card"><div class="entry-date-top"><span class="entry-date-title">DATUM</span><span class="entry-today-badge" id="entryTodayBadge">Heute</span></div><input id="fDate" type="date" required><div class="entry-date-human" id="entryDateHuman"></div></div><div class="entry-section-label">Arbeitszeit</div><div class="entry-time-grid"><div class="field"><label>Beginn</label><input id="fStart" type="time"></div><div class="field"><label>Ende</label><input id="fEnd" type="time"></div></div><div class="entry-break-row"><div class="field"><label>Pause (Minuten)</label><input id="fBreak" type="number" min="0" step="5" value="0" inputmode="numeric"></div></div><div class="entry-summary"><div><div class="entry-summary-label">Verrechenbar</div><div class="entry-summary-hours" id="calcHours">–</div><div class="help" id="calcExplain"></div></div><div class="entry-summary-gross" id="calcGross">–<small>Honorar</small></div></div><div class="entry-note field"><label>Bemerkung</label><input id="fNote" placeholder="optional"></div><details class="entry-advanced"><summary>Weitere Angaben</summary><div class="entry-advanced-body"><div class="formgrid"><div class="field"><label>Stundensatz (€)</label><input id="fRate" type="number" step="0.01" required></div><div class="field"><label>Stunden direkt überschreiben</label><input id="fManual" type="number" min="0" step="0.25" placeholder="z. B. 7"></div></div><div class="help" style="margin-top:7px">Direkte Stundenangabe überschreibt Beginn, Ende und Pause.</div></div></details></div><div class="entry-modal-actions"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" id="saveEntry" value="default">Einsatz speichern</button></div></form></dialog>
@@ -125,14 +228,56 @@ function euro(n){return new Intl.NumberFormat("de-AT",{style:"currency",currency
 function entryHours(e){if(e.manualHours!==null&&e.manualHours!==""&&e.manualHours!==undefined&&!Number.isNaN(Number(e.manualHours)))return Math.max(0,Number(e.manualHours));if(!e.start||!e.end)return null;const[sh,sm]=e.start.split(":").map(Number),[eh,em]=e.end.split(":").map(Number);let mins=(eh*60+em)-(sh*60+sm);if(mins<=0)mins+=1440;mins-=Number(e.breakMinutes||0);return Math.max(0,mins/60)}function gross(e){const h=entryHours(e);return h===null?null:h*Number(e.rate||state.settings.defaultRate||0)}function monthKey(e){return e.date?e.date.slice(0,7):""}function parkAmount(p){return Number(p.amount||0)}
 function years(){const s=new Set([...state.entries,...state.parkingRecords].map(e=>e.date?.slice(0,4)).filter(Boolean));s.add(String(new Date().getFullYear()));s.add(String(state.settings.year||2026));return[...s].sort()}function fillSelect(sel,vals,value){const cur=value??sel.value;sel.innerHTML="";vals.forEach(v=>{const o=document.createElement("option");o.value=String(v.value??v);o.textContent=String(v.label??v);sel.appendChild(o)});if([...sel.options].some(o=>o.value===String(cur)))sel.value=String(cur)}
 function setupSelectors(){const ys=years().map(y=>({value:y,label:y}));["dashYear","entryYear","parkingYear","invYear"].forEach(id=>fillSelect(document.getElementById(id),ys,document.getElementById(id).value||String(state.settings.year||2026)));for(const id of["entryMonth","parkingMonth"]){const el=document.getElementById(id),prev=el.value;el.innerHTML='<option value="">Alle Monate</option>';MONTHS.forEach((m,i)=>el.insertAdjacentHTML("beforeend",`<option value="${String(i+1).padStart(2,"0")}">${m}</option>`));el.value=prev}const im=invMonth,p=im.value;im.innerHTML="";MONTHS.forEach((m,i)=>im.insertAdjacentHTML("beforeend",`<option value="${String(i+1).padStart(2,"0")}">${m}</option>`));im.value=p||String(new Date().getMonth()+1).padStart(2,"0")}
-function switchTab(name){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id==="panel-"+name));if(name==="invoice")renderInvoice();if(name==="dashboard")setTimeout(renderCharts,30)}document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+function switchTab(name){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id==="panel-"+name));if(name==="invoice")renderInvoice();if(name==="dashboard"){renderOverviewV6();setTimeout(renderCharts,30)}window.scrollTo({top:0,behavior:"smooth"})}document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 function timeMinutes(t){if(!t||!/^[0-2]\d:[0-5]\d$/.test(t))return null;const[a,b]=t.split(":").map(Number);return a*60+b}
 function parkingMinutes(p){const a=timeMinutes(p.start),b=timeMinutes(p.end);if(a===null||b===null)return 0;let d=b-a;if(d<0)d+=1440;return d}
 function entryStatus(e){if(e.date>todayISO())return"planned";return entryHours(e)!==null?"done":"open"}
 function isEarnedEntry(e){return entryStatus(e)==="done"}
 function monthlyData(y){return MONTHS.map((m,i)=>{const mk=y+"-"+String(i+1).padStart(2,"0"),es=state.entries.filter(e=>monthKey(e)===mk),ds=es.filter(isEarnedEntry),pending=es.filter(e=>!isEarnedEntry(e)),ps=state.parkingRecords.filter(p=>monthKey(p)===mk);const h=ds.reduce((s,e)=>s+entryHours(e),0),g=ds.reduce((s,e)=>s+gross(e),0),r=g*Number(state.settings.reservePct||0)/100,parking=ps.reduce((s,p)=>s+parkAmount(p),0),parkMins=ps.reduce((s,p)=>s+parkingMinutes(p),0);return{m,mk,es,ds,pending,ps,h,g,r,a:g-r,parking,parkMins,after:g-r-parking,perHour:h?g/h:0}})}
 function yearForecast(y,data){const today=todayISO(),earnedEntries=state.entries.filter(e=>e.date?.startsWith(y+"-")&&e.date<=today&&entryHours(e)!==null),avgH=earnedEntries.length?earnedEntries.reduce((s,e)=>s+entryHours(e),0)/earnedEntries.length:0,future=state.entries.filter(e=>e.date?.startsWith(y+"-")&&e.date>today);let futureGross=0,estimated=0;for(const e of future){const h=entryHours(e);if(h!==null)futureGross+=h*Number(e.rate||state.settings.defaultRate||0);else if(avgH>0){futureGross+=avgH*Number(e.rate||state.settings.defaultRate||0);estimated++}}const earned=earnedEntries.reduce((s,e)=>s+gross(e),0);return{total:earned+futureGross,futureCount:future.length,estimated,avgH}}
-function renderDashboard(){const y=dashYear.value||String(state.settings.year),data=monthlyData(y),h=data.reduce((s,x)=>s+x.h,0),g=data.reduce((s,x)=>s+x.g,0),r=g*Number(state.settings.reservePct||0)/100,a=g-r,parking=data.reduce((s,x)=>s+x.parking,0),done=data.reduce((s,x)=>s+x.ds.length,0),planned=data.reduce((s,x)=>s+x.pending.length,0),parks=data.flatMap(x=>x.ps),withReceipt=parks.filter(p=>p.dropboxReceiptPath||p.receiptName).length,workdays=new Set(data.flatMap(x=>x.ds.map(e=>e.date))).size,parkHours=parks.reduce((s,p)=>s+parkingMinutes(p),0)/60,unassigned=parks.filter(p=>!p.entryId).length,forecast=yearForecast(y,data);kpiHours.textContent=dec(h,1)+" h";kpiGross.textContent=euro(g);kpiReserve.textContent=euro(r);kpiAvailable.textContent=euro(a);kpiParking.textContent=euro(parking);kpiAfterParking.textContent=euro(a-parking);reserveHint.textContent=dec(state.settings.reservePct,0)+" %";kpiDoneCount.textContent=String(done);kpiPlannedCount.textContent=String(planned);kpiAvgHours.textContent=done?dec(h/done,2)+" h":"–";kpiAvgGross.textContent=done?euro(g/done):"–";kpiAvgParking.textContent=done?euro(parking/done):"–";kpiReceiptRate.textContent=parks.length?dec(withReceipt/parks.length*100,0)+" %":"–";kpiWorkdays.textContent=String(workdays);kpiGrossPerHour.textContent=h?euro(g/h):"–";kpiParkingPerHour.textContent=h?euro(parking/h):"–";kpiParkingHours.textContent=parkHours?dec(parkHours,1)+" h":"–";kpiUnassignedParking.textContent=String(unassigned);kpiForecast.textContent=euro(forecast.total);forecastHint.textContent=forecast.futureCount?`${forecast.futureCount} zukünftige Termine${forecast.estimated?` · ${forecast.estimated} mit Ø ${dec(forecast.avgH,1)} h geschätzt`:""}`:"keine zukünftigen Termine erfasst";monthRows.innerHTML="";monthCards.innerHTML="";data.forEach(x=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${x.m}</td><td class="num">${x.h?dec(x.h,1):"–"}</td><td class="num">${x.g?euro(x.g):"–"}</td><td class="num">${x.g?euro(x.r):"–"}</td><td class="num">${x.g?euro(x.a):"–"}</td><td class="num">${x.parking?euro(x.parking):"–"}</td><td class="num">${x.ps.length||"–"}</td><td class="num">${x.h?euro(x.perHour):"–"}</td><td class="num">${(x.g||x.parking)?euro(x.after):"–"}</td><td class="num">${x.ds.length}</td><td class="num">${x.pending.length}</td>`;monthRows.appendChild(tr);if(x.es.length||x.ps.length){monthCards.insertAdjacentHTML("beforeend",`<div class="mobile-card"><div class="top"><div><div class="main">${x.m}</div><div class="meta">${x.ds.length} erledigt · ${x.pending.length} geplant/offen · ${dec(x.h,1)} h · ${x.ps.length} Parkvorgänge</div></div><div class="amount">${euro(x.g)}</div></div><div class="row"><span class="meta">Parken ${euro(x.parking)} · ${x.h?euro(x.perHour)+"/h":"–"}</span><strong>nach Rücklage & Parken ${euro(x.after)}</strong></div></div>`)}});renderCharts()}
+function renderDashboard(){const y=dashYear.value||String(state.settings.year),data=monthlyData(y),h=data.reduce((s,x)=>s+x.h,0),g=data.reduce((s,x)=>s+x.g,0),r=g*Number(state.settings.reservePct||0)/100,a=g-r,parking=data.reduce((s,x)=>s+x.parking,0),done=data.reduce((s,x)=>s+x.ds.length,0),planned=data.reduce((s,x)=>s+x.pending.length,0),parks=data.flatMap(x=>x.ps),withReceipt=parks.filter(p=>p.dropboxReceiptPath||p.receiptName).length,workdays=new Set(data.flatMap(x=>x.ds.map(e=>e.date))).size,parkHours=parks.reduce((s,p)=>s+parkingMinutes(p),0)/60,unassigned=parks.filter(p=>!p.entryId).length,forecast=yearForecast(y,data);kpiHours.textContent=dec(h,1)+" h";kpiGross.textContent=euro(g);kpiReserve.textContent=euro(r);kpiAvailable.textContent=euro(a);kpiParking.textContent=euro(parking);kpiAfterParking.textContent=euro(a-parking);reserveHint.textContent=dec(state.settings.reservePct,0)+" %";kpiDoneCount.textContent=String(done);kpiPlannedCount.textContent=String(planned);kpiAvgHours.textContent=done?dec(h/done,2)+" h":"–";kpiAvgGross.textContent=done?euro(g/done):"–";kpiAvgParking.textContent=done?euro(parking/done):"–";kpiReceiptRate.textContent=parks.length?dec(withReceipt/parks.length*100,0)+" %":"–";kpiWorkdays.textContent=String(workdays);kpiGrossPerHour.textContent=h?euro(g/h):"–";kpiParkingPerHour.textContent=h?euro(parking/h):"–";kpiParkingHours.textContent=parkHours?dec(parkHours,1)+" h":"–";kpiUnassignedParking.textContent=String(unassigned);kpiForecast.textContent=euro(forecast.total);forecastHint.textContent=forecast.futureCount?`${forecast.futureCount} zukünftige Termine${forecast.estimated?` · ${forecast.estimated} mit Ø ${dec(forecast.avgH,1)} h geschätzt`:""}`:"keine zukünftigen Termine erfasst";monthRows.innerHTML="";monthCards.innerHTML="";data.forEach(x=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${x.m}</td><td class="num">${x.h?dec(x.h,1):"–"}</td><td class="num">${x.g?euro(x.g):"–"}</td><td class="num">${x.g?euro(x.r):"–"}</td><td class="num">${x.g?euro(x.a):"–"}</td><td class="num">${x.parking?euro(x.parking):"–"}</td><td class="num">${x.ps.length||"–"}</td><td class="num">${x.h?euro(x.perHour):"–"}</td><td class="num">${(x.g||x.parking)?euro(x.after):"–"}</td><td class="num">${x.ds.length}</td><td class="num">${x.pending.length}</td>`;monthRows.appendChild(tr);if(x.es.length||x.ps.length){monthCards.insertAdjacentHTML("beforeend",`<div class="mobile-card"><div class="top"><div><div class="main">${x.m}</div><div class="meta">${x.ds.length} erledigt · ${x.pending.length} geplant/offen · ${dec(x.h,1)} h · ${x.ps.length} Parkvorgänge</div></div><div class="amount">${euro(x.g)}</div></div><div class="row"><span class="meta">Parken ${euro(x.parking)} · ${x.h?euro(x.perHour)+"/h":"–"}</span><strong>nach Rücklage & Parken ${euro(x.after)}</strong></div></div>`)}});renderOverviewV6();renderCharts()}
+
+function renderOverviewV6(){
+  const now=new Date(), y=String(now.getFullYear()), m=String(now.getMonth()+1).padStart(2,"0"), mk=`${y}-${m}`;
+  const md=monthlyData(y)[now.getMonth()]||{h:0,g:0,parking:0,es:[],ds:[],pending:[]};
+  const monthName=MONTHS[now.getMonth()]||"Aktueller Monat";
+  if(window.v6MonthTitle)v6MonthTitle.textContent=`${monthName} ${y}`;
+  if(window.v6MonthGross)v6MonthGross.textContent=euro(md.g||0);
+  if(window.v6MonthHours)v6MonthHours.textContent=`${dec(md.h||0,1)} h verrechenbar`;
+  if(window.v6MonthParking)v6MonthParking.textContent=euro(md.parking||0);
+  if(window.v6MonthCount)v6MonthCount.textContent=String((md.es||[]).length);
+
+  const yearData=monthlyData(y), yh=yearData.reduce((s,x)=>s+x.h,0), yg=yearData.reduce((s,x)=>s+x.g,0), yr=yg*Number(state.settings.reservePct||0)/100, yp=yearData.reduce((s,x)=>s+x.parking,0);
+  if(window.v6YearTitle)v6YearTitle.textContent=`${y} bisher`;
+  if(window.v6YearGross)v6YearGross.textContent=euro(yg);
+  if(window.v6YearHours)v6YearHours.textContent=dec(yh,1)+" h";
+  if(window.v6YearReserve)v6YearReserve.textContent=euro(yr);
+  if(window.v6YearAfter)v6YearAfter.textContent=euro(yg-yr-yp);
+
+  if(window.v6OverviewEntries){
+    const today=todayISO();
+    const sorted=[...state.entries].sort((a,b)=>a.date.localeCompare(b.date));
+    const future=sorted.filter(e=>e.date>=today).slice(0,3);
+    const past=sorted.filter(e=>e.date<today).slice(-2).reverse();
+    const show=(future.length?future:past).slice(0,3);
+    v6OverviewEntries.innerHTML=show.length?show.map(e=>{
+      const h=entryHours(e), g=gross(e), park=entryParkingTotal(e.id), st=entryStatus(e);
+      const time=(e.start||e.end)?`${e.start||"–"}${e.end?"–"+e.end:""}`:(st==="planned"?"geplant":"Zeit offen");
+      return `<button class="v6-list-row" type="button" data-v6-entry="${e.id}" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:#fff;text-align:left;color:inherit"><div class="v6-row-main"><div class="v6-row-title">${dateAT(e.date)}</div><div class="v6-row-sub">${time}${h!==null?` · ${dec(h,1)} h`:""}${park?` · Parken ${euro(park)}`:""}</div></div><div class="v6-row-right"><div class="v6-row-amount">${g===null?(st==="planned"?"geplant":"offen"):euro(g)}</div><span class="v6-chevron">›</span></div></button>`
+    }).join(""):'<div class="v6-open-empty">Noch keine Einsätze vorhanden.</div>';
+    v6OverviewEntries.querySelectorAll('[data-v6-entry]').forEach(b=>b.onclick=()=>openEntry(b.dataset.v6Entry));
+  }
+
+  if(window.v6OpenItems){
+    const openEntries=state.entries.filter(e=>entryStatus(e)==="open");
+    const unassigned=state.parkingRecords.filter(p=>!p.entryId);
+    const items=[];
+    if(openEntries.length)items.push(`<div class="v6-list-row"><div class="v6-row-main"><div class="v6-row-title">${openEntries.length} Einsatz${openEntries.length===1?"":"e"} ohne vollständige Stunden</div><div class="v6-row-sub">Zeit oder Stunden noch ergänzen</div></div><div class="v6-row-right"><span class="badge warn">offen</span></div></div>`);
+    if(unassigned.length)items.push(`<div class="v6-list-row"><div class="v6-row-main"><div class="v6-row-title">${unassigned.length} Parkvorgang${unassigned.length===1?"":"e"} ohne Zuordnung</div><div class="v6-row-sub">Kann in Finanzen geprüft werden</div></div><div class="v6-row-right"><span class="badge missing">prüfen</span></div></div>`);
+    v6OpenItems.innerHTML=items.length?items.join(""):'<div class="v6-open-empty">Aktuell nichts offen.</div>';
+    if(window.v6OpenSection)v6OpenSection.style.display=items.length?"block":"none";
+  }
+}
 function drawBarChart(canvas,values,labels,formatter){const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=Math.max(320,rect.width*dpr);canvas.height=Math.max(180,rect.height*dpr);const c=canvas.getContext("2d");c.scale(dpr,dpr);const w=canvas.width/dpr,h=canvas.height/dpr,p={l:44,r:10,t:12,b:30},cw=w-p.l-p.r,ch=h-p.t-p.b,max=Math.max(...values,1);c.clearRect(0,0,w,h);c.font="11px Segoe UI,Arial";c.fillStyle="#6b7280";c.strokeStyle="#e5e7eb";c.lineWidth=1;for(let i=0;i<4;i++){const y=p.t+ch*i/3;c.beginPath();c.moveTo(p.l,y);c.lineTo(w-p.r,y);c.stroke();const val=max*(1-i/3);c.fillText(formatter(val),2,y+4)}const gap=5,bw=Math.max(4,(cw-gap*11)/12);values.forEach((v,i)=>{const x=p.l+i*(bw+gap),bh=ch*(v/max),y=p.t+ch-bh;c.fillStyle="#1f4f8f";c.fillRect(x,y,bw,bh);c.fillStyle="#6b7280";c.fillText(labels[i],x+Math.max(0,bw/2-4),h-8)})}
 function drawComboChart(canvas,hours,parking,labels){const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=Math.max(320,rect.width*dpr);canvas.height=Math.max(180,rect.height*dpr);const c=canvas.getContext("2d");c.scale(dpr,dpr);const w=canvas.width/dpr,h=canvas.height/dpr,p={l:38,r:12,t:12,b:30},cw=w-p.l-p.r,ch=h-p.t-p.b,maxH=Math.max(...hours,1),maxP=Math.max(...parking,1);c.clearRect(0,0,w,h);c.strokeStyle="#e5e7eb";for(let i=0;i<4;i++){const y=p.t+ch*i/3;c.beginPath();c.moveTo(p.l,y);c.lineTo(w-p.r,y);c.stroke()}const step=cw/12;parking.forEach((v,i)=>{const bh=ch*.45*(v/maxP),x=p.l+i*step+step*.18;c.fillStyle="#dbe5f3";c.fillRect(x,p.t+ch-bh,step*.64,bh)});c.beginPath();hours.forEach((v,i)=>{const x=p.l+i*step+step/2,y=p.t+ch-(v/maxH)*ch*.95;i?c.lineTo(x,y):c.moveTo(x,y)});c.strokeStyle="#1f4f8f";c.lineWidth=2.2;c.stroke();hours.forEach((v,i)=>{const x=p.l+i*step+step/2,y=p.t+ch-(v/maxH)*ch*.95;c.beginPath();c.arc(x,y,2.6,0,Math.PI*2);c.fillStyle="#1f4f8f";c.fill()});c.font="11px Segoe UI,Arial";c.fillStyle="#6b7280";labels.forEach((l,i)=>c.fillText(l,p.l+i*step+step/2-4,h-8));c.fillText("h",3,15);c.fillText("Park €",w-44,15)}
 function drawLineChart(canvas,values,labels,formatter){const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=Math.max(320,rect.width*dpr);canvas.height=Math.max(180,rect.height*dpr);const c=canvas.getContext("2d");c.scale(dpr,dpr);const w=canvas.width/dpr,h=canvas.height/dpr,p={l:44,r:10,t:12,b:30},cw=w-p.l-p.r,ch=h-p.t-p.b,max=Math.max(...values,1);c.clearRect(0,0,w,h);c.strokeStyle="#e5e7eb";c.fillStyle="#6b7280";c.font="11px Segoe UI,Arial";for(let i=0;i<4;i++){const y=p.t+ch*i/3;c.beginPath();c.moveTo(p.l,y);c.lineTo(w-p.r,y);c.stroke();c.fillText(formatter(max*(1-i/3)),2,y+4)}const step=cw/Math.max(1,values.length-1);c.beginPath();values.forEach((v,i)=>{const x=p.l+i*step,y=p.t+ch-(v/max)*ch;i?c.lineTo(x,y):c.moveTo(x,y)});c.strokeStyle="#1f4f8f";c.lineWidth=2.3;c.stroke();values.forEach((v,i)=>{const x=p.l+i*step,y=p.t+ch-(v/max)*ch;c.beginPath();c.arc(x,y,2.6,0,Math.PI*2);c.fillStyle="#1f4f8f";c.fill();c.fillStyle="#6b7280";c.fillText(labels[i],x-4,h-8)})}
@@ -220,7 +365,7 @@ openIOSShortcut.onclick=()=>{const name=(state.settings.iosShortcutName||"Vertre
 function loadSettingsForm(){const s=state.settings;setRate.value=s.defaultRate;setReserve.value=s.reservePct;setService.value=s.serviceDescription||"";setSalutation.value=s.salutation||"";setSignoffName.value=s.signoffName||"";setPayment.value=s.paymentText||"";setTaxNote.value=s.taxNote||"";setIssuerName.value=s.issuerName||"";setIssuerAddress.value=s.issuerAddress||"";setIssuerEmail.value=s.issuerEmail||"";setIssuerPhone.value=s.issuerPhone||"";setIban.value=s.iban||"";setBic.value=s.bic||"";setTaxNumber.value=s.taxNumber||"";setRecipientName.value=s.recipientName||"";setRecipientAddress.value=s.recipientAddress||"";setDropboxAppKey.value=s.dropboxAppKey||"";setDropboxPath.value=s.dropboxSyncPath||"/Vertretungsdienste/00 System/daten.json";setEasyParkImportPath.value=s.easyParkImportPath||"/Vertretungsdienste/00 System/Import/easypark.json";setIOSShortcutName.value=s.iosShortcutName||"Vertretung Familienkalender";setCalendarEventTitle.value=s.calendarEventTitle||"Vertretung";setCalendarEventLocation.value=s.calendarEventLocation||"";setCalendarButtonEnabled.checked=s.calendarButtonEnabled!==false;setDropboxAuto.checked=!!s.dropboxAutoSync;redirectUri.textContent=redirectURL();setDropboxStatus(isDropboxConnected()?"Auf diesem Gerät verbunden":"Nicht verbunden",isDropboxConnected()?"on":"off")}
 function saveSettingsForm(){Object.assign(state.settings,{defaultRate:Number(setRate.value||170),reservePct:Number(setReserve.value||0),serviceDescription:setService.value.trim(),salutation:setSalutation.value.trim(),signoffName:setSignoffName.value.trim(),paymentText:setPayment.value.trim(),taxNote:setTaxNote.value.trim(),issuerName:setIssuerName.value.trim(),issuerAddress:setIssuerAddress.value.trim(),issuerEmail:setIssuerEmail.value.trim(),issuerPhone:setIssuerPhone.value.trim(),iban:setIban.value.trim(),bic:setBic.value.trim(),taxNumber:setTaxNumber.value.trim(),recipientName:setRecipientName.value.trim(),recipientAddress:setRecipientAddress.value.trim(),dropboxAppKey:setDropboxAppKey.value.trim(),dropboxSyncPath:setDropboxPath.value.trim()||"/Vertretungsdienste/00 System/daten.json",easyParkImportPath:setEasyParkImportPath.value.trim()||"/Vertretungsdienste/00 System/Import/easypark.json",iosShortcutName:setIOSShortcutName.value.trim()||"Vertretung Familienkalender",calendarEventTitle:setCalendarEventTitle.value.trim()||"Vertretung",calendarEventLocation:setCalendarEventLocation.value.trim(),calendarButtonEnabled:setCalendarButtonEnabled.checked,dropboxAutoSync:setDropboxAuto.checked,_updatedAt:nowISO()});saveState();refreshAll(false)}["setRate","setReserve","setService","setSalutation","setSignoffName","setPayment","setTaxNote","setIssuerName","setIssuerAddress","setIssuerEmail","setIssuerPhone","setIban","setBic","setTaxNumber","setRecipientName","setRecipientAddress","setDropboxAppKey","setDropboxPath","setEasyParkImportPath","setIOSShortcutName","setCalendarEventTitle","setCalendarEventLocation","setCalendarButtonEnabled","setDropboxAuto"].forEach(id=>document.getElementById(id).addEventListener("change",saveSettingsForm));
 exportBackup.onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`Vertretungsabrechnung_Backup_${todayISO()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};importBackup.onchange=async ev=>{const f=ev.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!x.entries||!x.settings)throw new Error();const cloud={appKey:state.settings.dropboxAppKey,path:state.settings.dropboxSyncPath,auto:state.settings.dropboxAutoSync};state=normalizeState(x);if(isDropboxConnected()){state.settings.dropboxAppKey=cloud.appKey;state.settings.dropboxSyncPath=cloud.path;state.settings.dropboxAutoSync=cloud.auto}state.settings._updatedAt=nowISO();saveState();loadSettingsForm();refreshAll();alert("Backup wurde importiert.")}catch(e){alert("Die Datei ist kein gültiges Backup.")}finally{ev.target.value=""}};resetData.onclick=()=>{if(confirm("Alle Änderungen verwerfen und wieder die Daten aus der Excel-Datei laden?")){state=normalizeState(clone(INITIAL_STATE));saveState();loadSettingsForm();refreshAll()}};
-[dashYear,entryYear,entryMonth,parkingYear,parkingMonth,parkingProviderFilter].forEach(x=>x.addEventListener("change",()=>{renderDashboard();renderEntries();renderParking()}));entrySearch.addEventListener("input",renderEntries);makePdf.onclick=downloadInvoicePdf;quickPdf.onclick=()=>{switchTab("invoice");setTimeout(renderInvoice,0)};quickAdd.onclick=()=>openEntry();addEntry.onclick=()=>openEntry();addParking.onclick=()=>openParking();
+[dashYear,entryYear,entryMonth,parkingYear,parkingMonth,parkingProviderFilter].forEach(x=>x.addEventListener("change",()=>{renderDashboard();renderEntries();renderParking()}));entrySearch.addEventListener("input",renderEntries);makePdf.onclick=downloadInvoicePdf;quickPdf.onclick=()=>{switchTab("invoice");setTimeout(renderInvoice,0)};quickAdd.onclick=()=>openEntry();addEntry.onclick=()=>openEntry();addParking.onclick=()=>openParking();if(window.v6ShowEntries)v6ShowEntries.onclick=()=>switchTab("entries");
 function refreshAll(rebuildSelectors=true){if(rebuildSelectors)setupSelectors();renderDashboard();renderEntries();renderParking();renderInvoice()}async function init(){setupSelectors();dashYear.value=String(state.settings.year||2026);entryYear.value=String(state.settings.year||2026);parkingYear.value=String(state.settings.year||2026);invYear.value=String(state.settings.year||2026);invDate.value=todayISO();invMonth.value=String(new Date().getMonth()+1).padStart(2,"0");invNumber.value=defaultInvoiceNumber(invYear.value,invMonth.value);loadSettingsForm();refreshAll(false);if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("service-worker.js").catch(console.warn);await handleDropboxCallback();if(state.settings.dropboxAutoSync&&isDropboxConnected()&&!new URLSearchParams(location.search).get("code"))setTimeout(syncWithDropbox,600)}init();
 </script>
 </body></html>
