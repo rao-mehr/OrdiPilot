@@ -1,0 +1,13 @@
+OrdiPilot V6.7 – Dashboard + Kalender
+
+Neu:
+- mehr funktionale Farbe im Dashboard
+- anklickbare Karte „Nächster Einsatz“ öffnet eine Kalenderübersicht
+- Kalender mit Monats- und Listenansicht
+- Statuspunkte pro Kalendertag (geplant / offen / erledigt)
+- Tagesdetail mit Bearbeiten/Bestätigen, Apple Kalender und Route starten
+- 7-Tage-Leiste auf der Übersicht
+- kompakter Monatsabschluss mit Einsätze / Parken / Honorarnote
+- farblich differenzierte Monats- und Jahreskennzahlen
+
+Datenmodell und Dropbox-Pfad bleiben unverändert.
