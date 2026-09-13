@@ -1,0 +1,14 @@
+OrdiPilot V6.6
+
+Neu:
+- neuer Name + neues App-Symbol ohne Initialen
+- Zeitprofile Vormittag / Nachmittag / Ganztags, frei definierbar
+- Zeiten nach Profilwahl direkt antippbar und änderbar
+- X-Schließen oben bei Einsatzplanung und Parken
+- Parken mit sichtbarem Monatskalender
+- Standort beim Parken per GPS erkennen oder manuell eingeben
+- Parkformular mit sauberem scrollbaren Inhalt und fix erreichbaren Aktionen
+- Einstellungen standardmäßig eingeklappt
+- Kalenderaufruf verwendet x-callback-url für bestmöglichen Rücksprung nach Kurzbefehle
+
+Für das vollständige Branding auf dem Home-Bildschirm zusätzlich manifest.webmanifest und icons/ hochladen.

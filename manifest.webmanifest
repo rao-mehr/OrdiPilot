@@ -1,21 +1,13 @@
 {
-  "name": "Vertretungsabrechnung – Dr. Mehrabi",
-  "short_name": "Vertretung",
-  "description": "Einsätze, Parkkosten, erweiterte Statistik, EasyPark und Honorarnoten",
+  "name": "OrdiPilot",
+  "short_name": "OrdiPilot",
+  "description": "Einsätze, Kalender, Parken, Abrechnung und Honorarnoten",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#1f4f8f",
+  "background_color": "#f4f7fb",
+  "theme_color": "#2f73f2",
   "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"}
   ]
 }
