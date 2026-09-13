@@ -1,0 +1,36 @@
+HONORARNOTE – SIGNATUR / DROPBOX / E-MAIL
+=========================================
+
+1. In der App unter „Mehr“ hinterlegen:
+   - Empfänger-E-Mail
+   - Dropbox-Zielordner (Standard: /Vertretungsdienste/02 Honorarnoten)
+   - Apple-Kurzbefehl „Honorarnote senden“
+
+2. Monatsablauf:
+   Dokumente → Honorarnote erstellen → Vorschau prüfen →
+   „Bestätigen & für ID Austria bereitstellen“ → PDF mit ID Austria signieren →
+   zurück in die App → „Signierte PDF übernehmen“.
+
+3. Nach „Signierte PDF übernehmen“:
+   Bei verbundener Dropbox wird die signierte PDF automatisch gespeichert als z. B.
+   /Vertretungsdienste/02 Honorarnoten/2026/09 September/2026-008_September_2026_signiert.pdf
+
+4. Versand ohne eigenen Kurzbefehl:
+   „E-Mail senden“ öffnet auf kompatiblen iPhones das iOS-Teilen-Menü inklusive signierter PDF.
+   Wenn das nicht möglich ist, lädt die App die PDF und öffnet eine vorausgefüllte E-Mail.
+
+5. Optionaler Apple-Kurzbefehl „Honorarnote senden“:
+   Die App übergibt Text im JSON-Format mit:
+   to, subject, body, fileUrl, fileName, invoiceKey
+
+   Im Kurzbefehl:
+   a) „Wörterbuch aus Eingabe abrufen“ / JSON als Wörterbuch lesen
+   b) Wert „fileUrl“ aus dem Wörterbuch holen
+   c) „Inhalt von URL abrufen“ → ergibt die signierte PDF
+   d) Werte „to“, „subject“ und „body“ aus dem Wörterbuch holen
+   e) Aktion „E-Mail senden“ verwenden; PDF als Anhang, to als Empfänger,
+      subject als Betreff, body als Nachricht.
+   f) Empfehlenswert: Entwurf/Verfassen-Ansicht anzeigen, damit du vor dem Versand
+      noch einmal kontrollierst und bewusst auf Senden tippst.
+
+Hinweis: Der Dropbox-Link, den die App an den Kurzbefehl übergibt, ist ein temporärer Link zur bereits signierten Datei.
