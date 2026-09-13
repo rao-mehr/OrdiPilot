@@ -1,7 +1,7 @@
 {
   "name": "OrdiPilot",
   "short_name": "OrdiPilot",
-  "description": "Einsätze, Kalender, Parken, Abrechnung und Honorarnoten",
+  "description": "Einsatzplanung, Kalender, Parken, Abrechnung und Honorarnoten",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f4f7fb",

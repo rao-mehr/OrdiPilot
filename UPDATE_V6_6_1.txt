@@ -1,0 +1,13 @@
+OrdiPilot V6.6.1
+
+- Dropbox App Key fest integriert; keine manuelle Eingabe mehr nötig.
+- Bestehender Dropbox-Datenpfad bleibt /Vertretungsdienste/00 System/daten.json.
+- Neues OrdiPilot-Symbol (Kompass/Pilot-Navigation, ohne Initialen).
+- Service-Worker-Cache auf v6.6.1 erhöht.
+
+Für GitHub ersetzen:
+- index.html
+- service-worker.js
+- manifest.webmanifest
+- icons/icon-192.png
+- icons/icon-512.png
