@@ -1,0 +1,10 @@
+OrdiPilot V6.9
+
+- neue unnummerierte Dropbox-Struktur
+- Honorarnoten: ein Standard-Dateiname pro Monat: JJJJ-MM_Honorarnote_Vakil-Adli.pdf
+- PDF wird beim Erstellen sofort in Dropbox/Honorarnoten/JJJJ gespeichert
+- ID-Austria-Signatur: Share-Sheet/A-Trust öffnen; persönliche Freigabe bleibt erforderlich
+- signierte PDF wird beim Wiederimport automatisch am selben Dropbox-Pfad über die unsignierte Version geschrieben
+- kein separater Archivieren-Schritt mehr
+- neue eindeutige Home-Screen-Icon-Dateien (V6.9), damit iOS das alte RM-Icon nicht wiederverwendet
+- System-, Park- und EasyPark-Pfade auf unnummerierte Dropbox-Ordner migriert
