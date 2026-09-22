@@ -1,0 +1,16 @@
+OrdiPilot V6.8
+
+Neu:
+- Schnellplanung für mehrere Einsatztage in einem Schritt.
+- Mehrfachauswahl direkt im Monatskalender.
+- Schnellauswahl aller Montage/Dienstage/Mittwoche/Donnerstage/Freitage im sichtbaren Monat.
+- Zeitprofile Vormittag, Nachmittag und Ganztags werden für alle gewählten Tage übernommen.
+- Zeiten bleiben direkt antippbar und individuell änderbar.
+- Bereits eingetragene Tage werden markiert und nicht versehentlich doppelt angelegt.
+- Honorarnoten werden wieder ausschließlich in /Vertretungsdienste/01 Honorarnoten abgelegt.
+- Finale PDF-Namen wieder wie bisher: JJJJ-MM_Honorarnote_Vakil-Adli.pdf.
+- Entwürfe heißen eindeutig JJJJ-MM_Honorarnote_Vakil-Adli_Entwurf.pdf.
+- Dokumentenansicht zeigt Honorarnummer und Dateiname/Ablage klar getrennt.
+
+Hinweis:
+Der bereits vorhandene Dropbox-Ordner /Vertretungsdienste/02 Honorarnoten wird durch dieses Update nicht automatisch verschoben oder gelöscht.
