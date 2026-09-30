@@ -1,0 +1,10 @@
+OrdiPilot V6.10
+
+Neu:
+- Mehrere Einsätze können weiterhin in einem Kalender gewählt werden.
+- Jeder ausgewählte Tag hat jetzt eine eigene Uhrzeit.
+- Pro Tag: Vormittag / Nachmittag / Ganztags oder Beginn/Ende direkt antippen.
+- Die oberen Zeitprofile können weiterhin mit einem Tipp auf alle ausgewählten Tage angewendet werden.
+- Neu ausgewählte Tage übernehmen automatisch das zuletzt verwendete Zeitprofil.
+
+GitHub: index.html, service-worker.js und manifest.webmanifest ersetzen. Icons bleiben unverändert.

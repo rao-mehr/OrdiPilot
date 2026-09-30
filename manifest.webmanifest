@@ -1,9 +1,9 @@
 {
-  "id": "./ordipilot-v69",
+  "id": "./ordipilot-v610",
   "name": "OrdiPilot",
   "short_name": "OrdiPilot",
   "description": "Einsatzplanung, Kalender, Parken, Abrechnung und Honorarnoten",
-  "start_url": "./index.html?v=69",
+  "start_url": "./index.html?v=610",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f7fb",
