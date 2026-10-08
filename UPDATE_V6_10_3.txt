@@ -1,0 +1,19 @@
+OrdiPilot V6.10.3 – EasyPark/Parken
+
+PWA:
+- Dropbox-Parkbelege werden zusätzlich zum easypark.json-Index direkt geprüft.
+- EasyPark-PDFs werden sowohl direkt unter Parkbelege/JJJJ/MM als auch in Unterordnern wie Parkbelege/JJJJ/MM/EasyPark erkannt.
+- Alte Pfade /03 Parkbelege werden automatisch auf /Parkbelege normalisiert.
+- Beim Öffnen eines Belegs probiert OrdiPilot automatisch Hauptordner, EasyPark, Bestaetigungen und Belege.
+- Dateinamen EasyPark_JJJJ-MM-TT_HHMM-HHMM_X-XXEUR.pdf werden automatisch als Parkvorgang erkannt und einem passenden Einsatz zugeordnet.
+
+Google Apps Script:
+- EasyPark_Automation_V2.gs ersetzt den alten EasyPark-Automatikcode.
+- Neue Dropbox-Struktur /Vertretungsdienste/System/Import/easypark.json + /Vertretungsdienste/Parkbelege.
+- Belege im Monats-Hauptordner ODER EasyPark-Unterordner werden unterstützt.
+- Existiert der EasyPark-Unterordner bereits, wird er für neue PDFs verwendet; sonst der Monats-Hauptordner.
+- Betreff "Dein EasyPark-Beleg" wird jetzt ebenfalls erkannt.
+- Einmal backfillEasyParkOctober2026() ausführen, danach setupEasyParkAutomation() einmal ausführen/prüfen.
+
+GitHub:
+index.html, service-worker.js, manifest.webmanifest ersetzen und committen/pushen.
