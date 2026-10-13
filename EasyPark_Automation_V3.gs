@@ -253,7 +253,8 @@ function normalizeLegacyPaths_(index) {
   all.forEach(x => {
     if (!x.dropboxReceiptPath) return;
     x.dropboxReceiptPath = x.dropboxReceiptPath
-      .replace('/Ordination & Selbständigkeit/Vertretungsdienste/03 Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')
+      .replace('/Vertretungsdienste/03 Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')
+      .replace('/Vertretungsdienste/Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')
       .replace('/Vertretungsabrechnung/Parkscheine/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/');
   });
 }

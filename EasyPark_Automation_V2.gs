@@ -234,7 +234,8 @@ function preferredReceiptPath_(date, filename) {
 
 function normalizeParkingPath_(path) {
   return String(path || '')
-    .replace(/^\/Ordination & Selbständigkeit/Vertretungsdienste\/03 Parkbelege/i, EP.PARKING_ROOT)
+    .replace(/^\/Vertretungsdienste\/03 Parkbelege/i, EP.PARKING_ROOT)
+    .replace(/^\/Vertretungsdienste\/Parkbelege/i, EP.PARKING_ROOT)
     .replace(/^\/Vertretungsabrechnung\/Parkscheine/i, EP.PARKING_ROOT);
 }
 
