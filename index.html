@@ -927,7 +927,8 @@ setupV67();
   function normalizeParkingPath6103(path){
     let p=String(path||"").trim();
     if(!p)return "";
-    p=p.replace(/^\/Ordination & Selbständigkeit/Vertretungsdienste\/03 Parkbelege/i,P6103.root)
+    p=p.replace(/^\/Vertretungsdienste\/03 Parkbelege/i,P6103.root)
+       .replace(/^\/Vertretungsdienste\/Parkbelege/i,P6103.root)
        .replace(/^\/Vertretungsabrechnung\/Parkscheine/i,P6103.root);
     return p;
   }
