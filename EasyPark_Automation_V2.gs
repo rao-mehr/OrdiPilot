@@ -2,15 +2,15 @@
  * OrdiPilot – EasyPark Gmail -> Dropbox V2
  *
  * Zielstruktur:
- *   Index:      /Vertretungsdienste/System/Import/easypark.json
- *   Parkbelege: /Vertretungsdienste/Parkbelege/JJJJ/MM/
- *               ODER /Vertretungsdienste/Parkbelege/JJJJ/MM/EasyPark/
+ *   Index:      /Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json
+ *   Parkbelege: /Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/JJJJ/MM/
+ *               ODER /Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/JJJJ/MM/EasyPark/
  *
  * WICHTIG:
  * - Existiert im Monatsordner bereits ein Unterordner "EasyPark", wird er verwendet.
  * - Existiert er nicht, werden neue EasyPark-PDFs direkt im Monatsordner gespeichert.
  * - Vorhandene PDFs werden in BEIDEN Varianten erkannt, damit keine Dubletten entstehen.
- * - Alte Pfade wie /Vertretungsdienste/03 Parkbelege/... werden automatisch normalisiert.
+ * - Alte Pfade wie /Ordination & Selbständigkeit/Vertretungsdienste/03 Parkbelege/... werden automatisch normalisiert.
  *
  * Script Properties (wie bisher):
  *   DROPBOX_APP_KEY
@@ -19,9 +19,9 @@
  */
 
 const EP = {
-  BASE: '/Vertretungsdienste',
-  INDEX: '/Vertretungsdienste/System/Import/easypark.json',
-  PARKING_ROOT: '/Vertretungsdienste/Parkbelege',
+  BASE: '/Ordination & Selbständigkeit/Vertretungsdienste',
+  INDEX: '/Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json',
+  PARKING_ROOT: '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege',
   SENDER: 'no-reply@easypark.net',
   RECENT_QUERY: 'from:no-reply@easypark.net newer_than:35d',
   BACKFILL_QUERY: 'from:no-reply@easypark.net after:2026/01/01'
@@ -234,7 +234,7 @@ function preferredReceiptPath_(date, filename) {
 
 function normalizeParkingPath_(path) {
   return String(path || '')
-    .replace(/^\/Vertretungsdienste\/03 Parkbelege/i, EP.PARKING_ROOT)
+    .replace(/^\/Ordination & Selbständigkeit/Vertretungsdienste\/03 Parkbelege/i, EP.PARKING_ROOT)
     .replace(/^\/Vertretungsabrechnung\/Parkscheine/i, EP.PARKING_ROOT);
 }
 
