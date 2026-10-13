@@ -49,9 +49,34 @@ jobs:
                   "Dropbox → Ordination & Selbständigkeit → Vertretungsdienste",
               )
               path.write_text(text, encoding="utf-8")
+
+          # Preserve migration support for data that still contains the OLD paths.
+          p = Path("EasyPark_Automation_V2.gs")
+          text = p.read_text(encoding="utf-8")
+          text = text.replace(
+              ".replace(/^\\/Ordination & Selbständigkeit/Vertretungsdienste\\/03 Parkbelege/i, EP.PARKING_ROOT)\n    .replace(/^\\/Vertretungsabrechnung\\/Parkscheine/i, EP.PARKING_ROOT);",
+              ".replace(/^\\/Vertretungsdienste\\/03 Parkbelege/i, EP.PARKING_ROOT)\n    .replace(/^\\/Vertretungsdienste\\/Parkbelege/i, EP.PARKING_ROOT)\n    .replace(/^\\/Vertretungsabrechnung\\/Parkscheine/i, EP.PARKING_ROOT);",
+          )
+          p.write_text(text, encoding="utf-8")
+
+          p = Path("EasyPark_Automation_V3.gs")
+          text = p.read_text(encoding="utf-8")
+          text = text.replace(
+              ".replace('/Ordination & Selbständigkeit/Vertretungsdienste/03 Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')\n      .replace('/Vertretungsabrechnung/Parkscheine/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/');",
+              ".replace('/Vertretungsdienste/03 Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')\n      .replace('/Vertretungsdienste/Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')\n      .replace('/Vertretungsabrechnung/Parkscheine/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/');",
+          )
+          p.write_text(text, encoding="utf-8")
+
+          p = Path("index.html")
+          text = p.read_text(encoding="utf-8")
+          text = text.replace(
+              "p=p.replace(/^\\/Ordination & Selbständigkeit/Vertretungsdienste\\/03 Parkbelege/i,P6103.root)\n       .replace(/^\\/Vertretungsabrechnung\\/Parkscheine/i,P6103.root);",
+              "p=p.replace(/^\\/Vertretungsdienste\\/03 Parkbelege/i,P6103.root)\n       .replace(/^\\/Vertretungsdienste\\/Parkbelege/i,P6103.root)\n       .replace(/^\\/Vertretungsabrechnung\\/Parkscheine/i,P6103.root);",
+          )
+          p.write_text(text, encoding="utf-8")
           PY
 
-      - name: Validate primary paths
+      - name: Validate primary and legacy paths
         shell: bash
         run: |
           python - <<'PY'
@@ -69,10 +94,22 @@ jobs:
           if missing:
               raise SystemExit("Missing migrated paths: " + ", ".join(missing))
 
+          # The old paths must remain only as explicit migration/normalization inputs.
+          if "/^\\/Ordination & Selbständigkeit/Vertretungsdienste" in index:
+              raise SystemExit("Broken JavaScript regex introduced by path rewrite")
+          if "/^\\/Vertretungsdienste\\/Parkbelege" not in index:
+              raise SystemExit("Legacy parking path normalization missing in index.html")
+
           for filename in ["EasyPark_Automation_V2.gs", "EasyPark_Automation_V3.gs"]:
               text = Path(filename).read_text(encoding="utf-8")
               if root not in text:
                   raise SystemExit(f"{filename} does not contain new Dropbox root")
+
+          v2 = Path("EasyPark_Automation_V2.gs").read_text(encoding="utf-8")
+          if "/^\\/Ordination & Selbständigkeit/Vertretungsdienste" in v2:
+              raise SystemExit("Broken regex in EasyPark_Automation_V2.gs")
+          if "/^\\/Vertretungsdienste\\/03 Parkbelege" not in v2:
+              raise SystemExit("Legacy numbered path normalization missing in V2")
 
           print("Dropbox root migration validation passed")
           PY
@@ -87,5 +124,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html EasyPark_Automation_V2.gs EasyPark_Automation_V3.gs SETUP_EasyPark_Gmail_Dropbox.txt README_GitHub_Pages.txt
-          git commit -m "Prepare new Dropbox root [skip ci]"
+          git commit -m "Prepare new Dropbox root safely [skip ci]"
           git push origin HEAD:dropbox-structure-migration
