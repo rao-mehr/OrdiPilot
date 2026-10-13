@@ -1,0 +1,14 @@
+OrdiPilot V6.11.0
+
+- Einsätze: deutlich klarere Kartenansicht, konsistente SVG-Symbole, Statusfarben und kompaktere Monatsstruktur.
+- Einsatzplanung: globale Zeitprofile nur bei genau einem ausgewählten Datum; bei Mehrfachauswahl individuelle Profile pro Datum.
+- Bemerkungen: kein globales Feld mehr; pro Einsatz ein Plus-Button rechts unten und eigene Bemerkung.
+- Mehrere Rechnungsempfänger: dauerhaft in state/settings gespeichert, hinzufügbar, auswählbar und Einsätzen zuordenbar.
+- Honorar: Dokumente -> Honorar; Empfänger als Kacheln, eigene monatliche Honorarnote pro Empfänger, eigener Dateiname und gleicher ID-Austria/Dropbox-Workflow.
+- Parken: Finanzen & Parken -> Parken & Belege; klarere Karten, Zeit/Dauer/Ort, Auge statt Büroklammer für Dokumentansicht.
+- Einstellungen: Mehr -> Einstellungen; iOS-artige Menüführung mit eigenen Detailseiten statt Akkordeons.
+- Branding: neues, eindeutiges Kalender-Häkchen-Symbol statt des bisherigen abstrakten Kompasssymbols.
+- Cache/Manifest auf 6.11.0 aktualisiert.
+- EasyPark_Automation_V3.gs beigelegt.
+
+GitHub: index.html, service-worker.js, manifest.webmanifest und icons/ ersetzen/ergänzen.
