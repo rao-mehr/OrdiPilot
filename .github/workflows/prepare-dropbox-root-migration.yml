@@ -1,0 +1,91 @@
+name: Prepare Dropbox root migration
+
+on:
+  push:
+    branches:
+      - dropbox-structure-migration
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: dropbox-structure-migration
+          fetch-depth: 0
+
+      - name: Rewrite Dropbox root safely
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          old = "/Vertretungsdienste"
+          new = "/Ordination & Selbständigkeit/Vertretungsdienste"
+          token = "__ORDIPILOT_NEW_DROPBOX_ROOT__"
+          files = [
+              Path("index.html"),
+              Path("EasyPark_Automation_V2.gs"),
+              Path("EasyPark_Automation_V3.gs"),
+              Path("SETUP_EasyPark_Gmail_Dropbox.txt"),
+              Path("README_GitHub_Pages.txt"),
+          ]
+
+          for path in files:
+              if not path.exists():
+                  continue
+              text = path.read_text(encoding="utf-8")
+              # Idempotent replacement: preserve paths already migrated.
+              text = text.replace(new, token)
+              text = text.replace(old, new)
+              text = text.replace(token, new)
+              text = text.replace(
+                  "Dropbox → Vertretungsdienste",
+                  "Dropbox → Ordination & Selbständigkeit → Vertretungsdienste",
+              )
+              path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Validate primary paths
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          root = "/Ordination & Selbständigkeit/Vertretungsdienste"
+          index = Path("index.html").read_text(encoding="utf-8")
+          required = [
+              f'{root}/System/daten.json',
+              f'{root}/System/Import/easypark.json',
+              f'{root}/Honorarnoten',
+              f'{root}/Parkbelege',
+          ]
+          missing = [x for x in required if x not in index]
+          if missing:
+              raise SystemExit("Missing migrated paths: " + ", ".join(missing))
+
+          for filename in ["EasyPark_Automation_V2.gs", "EasyPark_Automation_V3.gs"]:
+              text = Path(filename).read_text(encoding="utf-8")
+              if root not in text:
+                  raise SystemExit(f"{filename} does not contain new Dropbox root")
+
+          print("Dropbox root migration validation passed")
+          PY
+
+      - name: Commit prepared migration
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No migration changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html EasyPark_Automation_V2.gs EasyPark_Automation_V3.gs SETUP_EasyPark_Gmail_Dropbox.txt README_GitHub_Pages.txt
+          git commit -m "Prepare new Dropbox root [skip ci]"
+          git push origin HEAD:dropbox-structure-migration
