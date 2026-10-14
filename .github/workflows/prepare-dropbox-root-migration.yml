@@ -36,7 +36,8 @@ jobs:
           }
           assert(hotfix.includes(root+'/System/daten.json'), 'Hotfix Dropbox fallback is not migrated');
           assert(v3.includes(root+'/System/Import/easypark.json'), 'EasyPark V3 index is not migrated');
-          assert(html.includes('/Vertretungsdienste/03 Parkbelege'), 'Legacy parking compatibility missing');
+          assert(v3.includes(".replace('/Vertretungsdienste/03 Parkbelege/', '"+root+"/Parkbelege/')"), 'Legacy numbered EasyPark path migration missing');
+          assert(v3.includes(".replace('/Vertretungsdienste/Parkbelege/', '"+root+"/Parkbelege/')"), 'Legacy EasyPark path migration missing');
           assert(hotfix.includes('SYNC_GUARD_EMPTY_MERGE'), 'Dropbox data-loss guard missing');
           assert(html.includes('vertretungsabrechnung-v3'), 'Stable localStorage key missing');
           console.log('OrdiPilot release validation passed');
