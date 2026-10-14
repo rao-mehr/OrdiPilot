@@ -3,9 +3,9 @@
  * Dauerhafte Gmail -> Dropbox Synchronisation für alle kommenden Monate.
  *
  * Dropbox:
- *   Index: /Vertretungsdienste/System/Import/easypark.json
- *   PDFs:  /Vertretungsdienste/Parkbelege/YYYY/MM/
- *          oder, falls vorhanden: /Vertretungsdienste/Parkbelege/YYYY/MM/EasyPark/
+ *   Index: /Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json
+ *   PDFs:  /Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/YYYY/MM/
+ *          oder, falls vorhanden: /Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/YYYY/MM/EasyPark/
  *
  * Script Properties:
  *   DROPBOX_APP_KEY
@@ -14,8 +14,8 @@
  */
 
 const EP = {
-  ROOT: '/Vertretungsdienste',
-  INDEX: '/Vertretungsdienste/System/Import/easypark.json',
+  ROOT: '/Ordination & Selbständigkeit/Vertretungsdienste',
+  INDEX: '/Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json',
   SENDER: 'no-reply@easypark.net',
   RECENT_QUERY: 'from:no-reply@easypark.net newer_than:35d',
   BACKFILL_QUERY: 'from:no-reply@easypark.net after:2026/01/01'
@@ -253,8 +253,9 @@ function normalizeLegacyPaths_(index) {
   all.forEach(x => {
     if (!x.dropboxReceiptPath) return;
     x.dropboxReceiptPath = x.dropboxReceiptPath
-      .replace('/Vertretungsdienste/03 Parkbelege/', '/Vertretungsdienste/Parkbelege/')
-      .replace('/Vertretungsabrechnung/Parkscheine/', '/Vertretungsdienste/Parkbelege/');
+      .replace('/Vertretungsdienste/03 Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')
+      .replace('/Vertretungsdienste/Parkbelege/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/')
+      .replace('/Vertretungsabrechnung/Parkscheine/', '/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/');
   });
 }
 

@@ -195,7 +195,7 @@
   }
   async function safeSyncWithDropbox(){
     if(!isDropboxConnected()){setDropboxStatus('Nicht verbunden');return false}
-    const path=state.settings.dropboxSyncPath||'/Vertretungsdienste/System/daten.json';let remote;
+    const path=state.settings.dropboxSyncPath||'/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json';let remote;
     try{setDropboxStatus('Synchronisiere…','busy');remote=await downloadCloudState(path);localSafetyBackup()}
     catch(err){console.error('Dropbox-Lesen fehlgeschlagen; Upload blockiert.',err);setDropboxStatus('Synchronisierung abgebrochen – Cloud-Daten unverändert','warn');return false}
     try{
