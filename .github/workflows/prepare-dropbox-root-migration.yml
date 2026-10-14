@@ -1,8 +1,7 @@
-name: Validate Dropbox root migration
+name: Validate OrdiPilot release
 on:
   push:
     branches:
-      - dropbox-structure-migration
       - main
   workflow_dispatch:
 permissions:
@@ -12,21 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate JavaScript and Dropbox destinations
+      - name: Validate JavaScript, PWA and canonical Dropbox paths
         shell: bash
         run: |
           node <<'JS'
           const fs=require('fs'),vm=require('vm'),assert=require('assert');
           const html=fs.readFileSync('index.html','utf8');
           for(const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
-            if(!/src=/.test(m[1]))new vm.Script(m[2]);
+            if(!/src=/.test(m[1])) new vm.Script(m[2]);
           }
-          new vm.Script(fs.readFileSync('service-worker.js','utf8'));
-          for(const file of ['EasyPark_Automation_V2.gs','EasyPark_Automation_V3.gs','EasyPark_Automation_V4_5_Migrated.gs']){
-            new vm.Script(fs.readFileSync(file,'utf8'));
+          const sw=fs.readFileSync('service-worker.js','utf8');
+          new vm.Script(sw);
+          const hotfix=fs.readFileSync('v6113-hotfix.js','utf8');
+          new vm.Script(hotfix);
+          new vm.Script(fs.readFileSync('EasyPark_Automation_V3.gs','utf8'));
+
+          const root='/Vertretungsdienste';
+          for(const suffix of ['/System/daten.json','/System/Import/easypark.json','/Honorarnoten','/Parkbelege']){
+            assert(html.includes(root+suffix), `Missing canonical Dropbox path: ${root+suffix}`);
           }
-          const root='/Ordination & Selbständigkeit/Vertretungsdienste';
-          for(const suffix of ['/System/daten.json','/System/Import/easypark.json','/Honorarnoten','/Parkbelege'])assert(html.includes(root+suffix));
-          assert(html.includes('v6104-root-migration'));
-          console.log('Dropbox migration validation passed');
+          assert(!html.includes('/Ordination & Selbständigkeit/Vertretungsdienste'), 'Legacy Dropbox root found');
+          assert(html.includes('vertretungsabrechnung-v3'), 'Stable localStorage key missing');
+          assert(hotfix.includes('SYNC_GUARD_EMPTY_MERGE'), 'Dropbox data-loss guard missing');
+          assert(sw.includes('v6113-hotfix.js'), 'V6.11.3 hotfix loader missing');
+
+          const manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
+          assert(/^\.\/index\.html\?v=\d+$/.test(manifest.start_url), 'Versioned PWA start_url missing');
+          console.log('OrdiPilot release validation passed');
           JS
