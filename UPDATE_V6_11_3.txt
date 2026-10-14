@@ -1,0 +1,6 @@
+OrdiPilot V6.11.3
+
+- Empfänger-spezifische Honorarnoten-Texte: Leistungsbezeichnung, Anrede und Name unter Grußformel.
+- Dropbox-Sicherheitswächter: kein Upload nach fehlgeschlagenem Cloud-Read; unerklärter Datenverlust wird blockiert.
+- Absichtliche Einsatz-/Park-Löschungen bleiben über Tombstones synchronisierbar.
+- localStorage-Key vertretungsabrechnung-v3 und kanonische Dropbox-Pfade bleiben unverändert.
