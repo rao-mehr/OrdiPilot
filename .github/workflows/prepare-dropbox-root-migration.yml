@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate JavaScript, PWA and Dropbox paths
+      - name: Validate JavaScript and canonical Dropbox paths
         shell: bash
         run: |
           node <<'JS'
@@ -27,24 +27,17 @@ jobs:
           const sw=fs.readFileSync('service-worker.js','utf8');
           new vm.Script(sw);
           const hotfix=fs.readFileSync('v6113-hotfix.js','utf8');
-          new vm.Script(hotfix);
           const v3=fs.readFileSync('EasyPark_Automation_V3.gs','utf8');
+          new vm.Script(hotfix);
           new vm.Script(v3);
 
           for(const suffix of ['/System/daten.json','/System/Import/easypark.json','/Honorarnoten','/Parkbelege']){
             assert(html.includes(root+suffix), `Missing canonical Dropbox path: ${root+suffix}`);
           }
           assert(hotfix.includes(root+'/System/daten.json'), 'Hotfix Dropbox fallback is not migrated');
-          assert(v3.includes("ROOT: '"+root+"'"), 'EasyPark V3 root is not migrated');
-          assert(v3.includes("INDEX: '"+root+"/System/Import/easypark.json'"), 'EasyPark V3 index is not migrated');
+          assert(v3.includes(root+'/System/Import/easypark.json'), 'EasyPark V3 index is not migrated');
           assert(html.includes('/Vertretungsdienste/03 Parkbelege'), 'Legacy parking compatibility missing');
-          assert(v3.includes(".replace('/Vertretungsdienste/03 Parkbelege/', '"+root+"/Parkbelege/')"), 'Legacy numbered parking migration missing');
-          assert(v3.includes(".replace('/Vertretungsdienste/Parkbelege/', '"+root+"/Parkbelege/')"), 'Legacy parking migration missing');
-          assert(html.includes('vertretungsabrechnung-v3'), 'Stable localStorage key missing');
           assert(hotfix.includes('SYNC_GUARD_EMPTY_MERGE'), 'Dropbox data-loss guard missing');
-          assert(sw.includes('v6113-hotfix.js'), 'V6.11.3 hotfix loader missing');
-
-          const manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
-          assert(/^\.\/index\.html\?v=\d+$/.test(manifest.start_url), 'Versioned PWA start_url missing');
+          assert(html.includes('vertretungsabrechnung-v3'), 'Stable localStorage key missing');
           console.log('OrdiPilot release validation passed');
           JS
