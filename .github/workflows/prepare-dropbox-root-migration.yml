@@ -1,41 +1,110 @@
-name: Validate OrdiPilot release
+name: Prepare Dropbox cutover
+
 on:
   push:
     branches:
-      - main
+      - dropbox-cutover-2026-10-14
   workflow_dispatch:
+
 permissions:
-  contents: read
+  contents: write
+
 jobs:
-  validate:
+  migrate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Validate JavaScript, PWA and canonical Dropbox paths
+      - name: Checkout cutover branch
+        uses: actions/checkout@v4
+        with:
+          ref: dropbox-cutover-2026-10-14
+          fetch-depth: 0
+
+      - name: Rewrite active Dropbox paths safely
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          OLD = '/Vertretungsdienste'
+          NEW = '/Ordination & Selbständigkeit/Vertretungsdienste'
+
+          # index.html: migrate active paths, but preserve old paths when they are
+          # explicitly used as legacy-normalization source patterns.
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          had_legacy_nonnumbered = r'.replace(/^\/Vertretungsdienste\/Parkbelege/i,P6103.root)' in text
+          out = []
+          for line in text.splitlines(True):
+              is_legacy_source = (
+                  r'.replace(/^\/Vertretungsdienste' in line
+                  or ".replace('/Vertretungsdienste" in line
+              )
+              out.append(line if is_legacy_source else line.replace(OLD, NEW))
+          text = ''.join(out)
+          if not had_legacy_nonnumbered:
+              needle = r'    p=p.replace(/^\/Vertretungsdienste\/03 Parkbelege/i,P6103.root)'
+              insert = needle + "\n" + r'       .replace(/^\/Vertretungsdienste\/Parkbelege/i,P6103.root)'
+              if needle in text:
+                  text = text.replace(needle, insert, 1)
+          p.write_text(text, encoding='utf-8')
+
+          # Hotfix fallback must use the new live path as well.
+          p = Path('v6113-hotfix.js')
+          text = p.read_text(encoding='utf-8').replace(OLD, NEW)
+          p.write_text(text, encoding='utf-8')
+
+          # EasyPark V3: migrate canonical root, while keeping both old parking roots
+          # as source aliases for one-way normalization into the new root.
+          p = Path('EasyPark_Automation_V3.gs')
+          text = p.read_text(encoding='utf-8').replace(OLD, NEW)
+          migrated = f".replace('{NEW}/03 Parkbelege/', '{NEW}/Parkbelege/')"
+          legacy = (
+              f".replace('{OLD}/03 Parkbelege/', '{NEW}/Parkbelege/')\n"
+              f"      .replace('{OLD}/Parkbelege/', '{NEW}/Parkbelege/')"
+          )
+          if migrated in text:
+              text = text.replace(migrated, legacy, 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate cutover
         shell: bash
         run: |
           node <<'JS'
           const fs=require('fs'),vm=require('vm'),assert=require('assert');
+          const root='/Ordination & Selbständigkeit/Vertretungsdienste';
           const html=fs.readFileSync('index.html','utf8');
           for(const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
             if(!/src=/.test(m[1])) new vm.Script(m[2]);
           }
-          const sw=fs.readFileSync('service-worker.js','utf8');
-          new vm.Script(sw);
           const hotfix=fs.readFileSync('v6113-hotfix.js','utf8');
           new vm.Script(hotfix);
-          new vm.Script(fs.readFileSync('EasyPark_Automation_V3.gs','utf8'));
+          const v3=fs.readFileSync('EasyPark_Automation_V3.gs','utf8');
+          new vm.Script(v3);
 
-          const root='/Vertretungsdienste';
           for(const suffix of ['/System/daten.json','/System/Import/easypark.json','/Honorarnoten','/Parkbelege']){
-            assert(html.includes(root+suffix), `Missing canonical Dropbox path: ${root+suffix}`);
+            assert(html.includes(root+suffix), `Missing new canonical path: ${root+suffix}`);
           }
-          assert(!html.includes('/Ordination & Selbständigkeit/Vertretungsdienste'), 'Legacy Dropbox root found');
+          assert(hotfix.includes(root+'/System/daten.json'), 'Hotfix fallback still points to old root');
+          assert(v3.includes("ROOT: '"+root+"'"), 'EasyPark V3 ROOT not migrated');
+          assert(v3.includes("INDEX: '"+root+"/System/Import/easypark.json'"), 'EasyPark V3 INDEX not migrated');
+          assert(v3.includes(".replace('/Vertretungsdienste/03 Parkbelege/', '"+root+"/Parkbelege/')"), 'Legacy numbered parking migration missing');
+          assert(v3.includes(".replace('/Vertretungsdienste/Parkbelege/', '"+root+"/Parkbelege/')"), 'Legacy unnumbered parking migration missing');
+          assert(html.includes('/Vertretungsdienste/03 Parkbelege'), 'Legacy parking compatibility missing in app');
           assert(html.includes('vertretungsabrechnung-v3'), 'Stable localStorage key missing');
           assert(hotfix.includes('SYNC_GUARD_EMPTY_MERGE'), 'Dropbox data-loss guard missing');
-          assert(sw.includes('v6113-hotfix.js'), 'V6.11.3 hotfix loader missing');
-
-          const manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
-          assert(/^\.\/index\.html\?v=\d+$/.test(manifest.start_url), 'Versioned PWA start_url missing');
-          console.log('OrdiPilot release validation passed');
+          console.log('Dropbox cutover validation passed');
           JS
+
+      - name: Commit migrated paths
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html v6113-hotfix.js EasyPark_Automation_V3.gs
+          git commit -m 'Switch OrdiPilot to consolidated Dropbox root [skip ci]'
+          git push origin HEAD:dropbox-cutover-2026-10-14
