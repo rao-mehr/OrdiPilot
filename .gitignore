@@ -5,3 +5,5 @@ backup*.json
 *.json.bak
 !manifest.webmanifest
 node_modules/
+__pycache__/
+*.pyc
