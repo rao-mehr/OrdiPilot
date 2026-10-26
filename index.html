@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=6110">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6110">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6110">
+<link rel="manifest" href="manifest.webmanifest?v=6120">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6120">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6120">
 <title>OrdiPilot</title>
 <style>
 @font-face{font-family:"Carlito";font-style:normal;font-weight:400;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-400-normal.woff2") format("woff2")}
@@ -467,7 +467,7 @@ function fillParkingEntryOptions(selected="",date=""){pEntryId.innerHTML='<optio
 let parkingPlannerCursor=new Date();function setParkingPlannerCursor(v){if(!v)return;const[y,m]=v.split("-").map(Number);parkingPlannerCursor=new Date(y,m-1,1)}function renderParkingCalendar(){if(!window.parkingCalGrid)return;const y=parkingPlannerCursor.getFullYear(),m=parkingPlannerCursor.getMonth();parkingCalTitle.textContent=`${MONTHS[m]} ${y}`;const first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7));let html="";for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const iso=isoFromDate(d),cls=["parking-cal-day",d.getMonth()===m?"":"out",iso===todayISO()?"today":"",iso===pDate.value?"selected":""].filter(Boolean).join(" ");html+=`<button type="button" class="${cls}" data-parking-date="${iso}">${d.getDate()}</button>`}parkingCalGrid.innerHTML=html;parkingCalGrid.querySelectorAll("[data-parking-date]").forEach(b=>b.onclick=()=>{pDate.value=b.dataset.parkingDate;setParkingPlannerCursor(pDate.value);fillParkingEntryOptions(pEntryId.value,pDate.value);renderParkingCalendar()})}async function detectParkingPosition(){if(!navigator.geolocation){parkingLocationStatus.textContent="Standorterkennung wird auf diesem Gerät nicht unterstützt.";return}parkingLocationStatus.textContent="Standort wird ermittelt …";detectParkingLocation.disabled=true;navigator.geolocation.getCurrentPosition(async pos=>{const lat=pos.coords.latitude,lon=pos.coords.longitude;let label=`${lat.toFixed(5)}, ${lon.toFixed(5)}`;try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1&accept-language=de`);if(r.ok){const j=await r.json(),a=j.address||{},place=a.city||a.town||a.village||a.municipality||a.suburb||"",street=[a.road||a.pedestrian||a.footway||"",a.house_number||""].filter(Boolean).join(" ");label=[street,place].filter(Boolean).join(", ")||j.display_name||label}}catch(e){}pCity.value=label;parkingLocationStatus.textContent=`Erkannt · Genauigkeit ca. ${Math.round(pos.coords.accuracy||0)} m`;detectParkingLocation.disabled=false},err=>{parkingLocationStatus.textContent=err.code===1?"Standortzugriff nicht erlaubt. Du kannst den Ort weiterhin manuell eingeben.":"Standort konnte nicht ermittelt werden.";detectParkingLocation.disabled=false},{enableHighAccuracy:true,timeout:10000,maximumAge:60000})}function openParking(id=null){editingParkingId=id;pendingReceiptFile=null;const p=id?state.parkingRecords.find(x=>x.id===id):{date:todayISO(),amount:"",provider:"HANDYPARKEN",entryId:"",start:"",end:"",city:"",zone:"",vat:0,documentType:"manual",note:"",assignmentMode:"auto",excluded:false};parkingModalTitle.textContent=id?"Parkvorgang bearbeiten":"Neuer Parkvorgang";pDate.value=p.date||todayISO();pAmount.value=p.amount??"";pProvider.value=p.provider||"HANDYPARKEN";pStart.value=p.start||"";pEnd.value=p.end||"";pCity.value=p.city||"";pZone.value=p.zone||"";pVat.value=p.vat??"";pDocumentType.value=p.documentType||"manual";pExcluded.value=p.excluded?"excluded":"counted";pNote.value=p.note||"";pReceipt.value="";pReceiptInfo.textContent=p.receiptName?`Vorhanden: ${p.receiptName}`:p.dropboxReceiptPath?`Dropbox: ${p.dropboxReceiptPath}`:"Kein Beleg ausgewählt.";parkingLocationStatus.textContent="Optional: per GPS erkennen oder manuell eintragen.";fillParkingEntryOptions(p.excluded?"":(p.entryId||""),p.date);pEntryId.disabled=!!p.excluded;setParkingPlannerCursor(pDate.value);renderParkingCalendar();parkingDialog.showModal()}pDate.addEventListener("change",()=>{fillParkingEntryOptions(pEntryId.value,pDate.value);setParkingPlannerCursor(pDate.value);renderParkingCalendar()});pExcluded.addEventListener("change",()=>{const excluded=pExcluded.value==="excluded";pEntryId.disabled=excluded;if(excluded)pEntryId.value=""});pReceipt.addEventListener("change",()=>{pendingReceiptFile=pReceipt.files?.[0]||null;pReceiptInfo.textContent=pendingReceiptFile?`${pendingReceiptFile.name} · ${(pendingReceiptFile.size/1024).toFixed(0)} KB`:"Kein Beleg ausgewählt."});saveParking.addEventListener("click",async ev=>{ev.preventDefault();if(!pDate.value||pAmount.value===""){alert("Bitte Datum und Betrag eintragen.");return}const old=editingParkingId?state.parkingRecords.find(x=>x.id===editingParkingId):null,id=editingParkingId||uuid("p"),excluded=pExcluded.value==="excluded",manualEntry=excluded?"":pEntryId.value,obj={id,date:pDate.value,amount:Number(pAmount.value),provider:pProvider.value,entryId:manualEntry,start:pStart.value,end:pEnd.value,city:pCity.value.trim(),zone:pZone.value.trim(),vat:Number(pVat.value||0),documentType:pDocumentType.value,note:pNote.value.trim(),excluded,source:old?.source||"App",receiptName:pendingReceiptFile?.name||old?.receiptName||"",receiptType:pendingReceiptFile?.type||old?.receiptType||"",dropboxReceiptPath:old?.dropboxReceiptPath||"",assignmentMode:excluded?"excluded":(manualEntry?"manual":"auto"),assignmentReason:excluded?"privat / nicht berücksichtigt":(manualEntry?"manuell gewählt":""),updatedAt:nowISO()};if(!manualEntry&&!excluded){const best=bestParkingAssignment(obj);obj.entryId=best.id;obj.assignmentReason=best.reason}if(pendingReceiptFile){try{await putReceipt(id,pendingReceiptFile)}catch(e){alert("Der Beleg konnte lokal nicht gespeichert werden.")}}if(editingParkingId)state.parkingRecords[state.parkingRecords.findIndex(x=>x.id===id)]=obj;else state.parkingRecords.push(obj);saveState();parkingDialog.close();refreshAll();if(pendingReceiptFile&&isDropboxConnected()){try{await uploadReceiptToDropbox(obj,pendingReceiptFile);saveState(false);renderParking()}catch(e){console.warn(e);setDropboxStatus("Beleg lokal gespeichert; Dropbox-Upload fehlgeschlagen.","warn")}}});async function deleteParking(id){const p=state.parkingRecords.find(x=>x.id===id);if(p&&confirm(`Parkvorgang ${dateAT(p.date)} (${euro(p.amount)}) löschen?`)){state.deletedParking[id]=nowISO();state.parkingRecords=state.parkingRecords.filter(x=>x.id!==id);try{await delReceipt(id)}catch(e){}saveState();refreshAll()}}
 async function openReceipt(id){const p=state.parkingRecords.find(x=>x.id===id);if(!p)return;if(p.dropboxReceiptPath&&isDropboxConnected()){try{const link=await dropboxTemporaryLink(p.dropboxReceiptPath);window.open(link,"_blank");return}catch(e){console.warn(e)}}const blob=await getReceipt(id);if(blob){const url=URL.createObjectURL(blob);window.open(url,"_blank");setTimeout(()=>URL.revokeObjectURL(url),60000)}else alert("Auf diesem Gerät ist kein lokaler Beleg gespeichert. Wenn der Beleg in Dropbox liegt, verbinde zuerst Dropbox.")}
 function currentInvoiceEntries(){const y=invYear.value,m=invMonth.value;return state.entries.filter(e=>e.date?.startsWith(`${y}-${m}-`)&&isEarnedEntry(e)).sort((a,b)=>a.date.localeCompare(b.date))}function monthEndDay(y,m){return new Date(Number(y),Number(m),0).getDate()}function modelMoney(n){return`${Number(n||0).toFixed(2).replace(".",",")} €`}function modelHours(n){const v=Number(n||0);return Number.isInteger(v)?String(v):String(Math.round(v*100)/100).replace(".",",")}function defaultInvoiceNumber(y,m){const yy=Number(y),mm=Number(m),seq=(yy===2026&&mm>=2)?mm-1:mm;return`${yy}-${String(Math.max(1,seq)).padStart(3,"0")}`}function modelPeriod(y,m){const mm=String(m).padStart(2,"0"),last=String(monthEndDay(y,m)).padStart(2,"0");return`01.${mm}.${y} – ${last}.${mm}.${y}`}function invoiceRateText(es,hrs){const rates=[...new Set(es.map(e=>Number(e.rate||0)))];return rates.length===1?`${modelHours(hrs)} Stunden à ${modelMoney(rates[0])}`:`${modelHours(hrs)} Stunden`}
-function renderInvoiceBase(){const y=invYear.value||String(state.settings.year),m=invMonth.value||"01",es=currentInvoiceEntries(),s=state.settings,total=es.reduce((a,e)=>a+gross(e),0),hrs=es.reduce((a,e)=>a+entryHours(e),0);invoiceWarning.style.display=(!s.issuerQualification||!s.issuerAddress||!s.recipientAddress||!s.iban)?"block":"none";invoiceWarning.textContent="Für das Vorlagen-Layout bitte Rechnungsdaten, Empfänger und IBAN vollständig hinterlegen.";const recipientLines=(s.recipientAddress||"").split("\n").filter(Boolean),issuerLines=(s.issuerAddress||"").split("\n").filter(Boolean);invoicePreview.innerHTML=`<div class="hn-title">Honorarnote für ärztliche Vertretungstätigkeit</div><div class="hn-number">Honorarnote Nummer: ${escapeHtml(invNumber.value||defaultInvoiceNumber(y,m))}</div><div class="hn-date">Wien, ${dateAT(invDate.value)}</div><hr class="hn-rule"><div class="hn-section-title">Ordinationsinhaberin:</div><div class="hn-name">${escapeHtml(s.recipientName||"")}</div>${s.recipientQualification?`<div class="hn-qualification">${escapeHtml(s.recipientQualification)}</div>`:""}${recipientLines.map(line=>`<div class="hn-address-line">${escapeHtml(line)}</div>`).join("")}<div class="hn-block-gap"></div><div class="hn-section-title">Vertretender Arzt:</div><div class="hn-name">${escapeHtml(s.issuerName||"")}</div>${s.issuerQualification?`<div class="hn-qualification">${escapeHtml(s.issuerQualification)}</div>`:""}${issuerLines.map(line=>`<div class="hn-address-line">${escapeHtml(line)}</div>`).join("")}<div class="hn-iban">IBAN: ${escapeHtml(s.iban||"")}</div><hr class="hn-rule"><div class="hn-body"><p>${escapeHtml(s.salutation||"")}</p><p class="hn-intro">Anbei übermittle ich die monatliche Honorarnote für meine ärztliche Vertretungstätigkeit<br>für den Monat <strong>${MONTHS[Number(m)-1]} ${y}</strong>.</p><div class="hn-summary"><div>-</div><div>Leistungszeitraum:</div><div>${escapeHtml(modelPeriod(y,m))}</div><div>-</div><div>Gesamtstunden:</div><div>${escapeHtml(invoiceRateText(es,hrs))}</div><div class="spacer"></div><div>-</div><div>Gesamthonorar:</div><div>${escapeHtml(modelMoney(total))}</div></div><div class="hn-legal"><p>${escapeHtml(s.taxNote||"")}</p><p>${escapeHtml(s.paymentText||"")}</p></div><div class="hn-signoff"><div>Mit freundlichen Grüßen,</div><div>${escapeHtml(s.signoffName||"")}</div></div></div>`}
+function renderInvoiceBase(){const y=invYear.value||String(state.settings.year),m=invMonth.value||"01",es=currentInvoiceEntries(),s=state.settings,total=es.reduce((a,e)=>a+gross(e),0),hrs=es.reduce((a,e)=>a+entryHours(e),0);invoiceWarning.style.display=(!s.issuerQualification||!s.issuerAddress||!s.recipientAddress||!s.iban)?"block":"none";invoiceWarning.textContent="Für das Vorlagen-Layout bitte Rechnungsdaten, Empfänger und IBAN vollständig hinterlegen.";const recipientLines=(s.recipientAddress||"").split("\n").filter(Boolean),issuerLines=(s.issuerAddress||"").split("\n").filter(Boolean);invoicePreview.innerHTML=`<div class="hn-title">Honorarnote für ärztliche Vertretungstätigkeit</div><div class="hn-number">Honorarnote Nummer: ${escapeHtml(invNumber.value||defaultInvoiceNumber(y,m))}</div><div class="hn-date">Wien, ${dateAT(invDate.value)}</div><hr class="hn-rule"><div class="hn-section-title">${escapeHtml(window.ordipilotRoleLabel?window.ordipilotRoleLabel():"Ordinationsinhaberin")}:</div><div class="hn-name">${escapeHtml(s.recipientName||"")}</div>${s.recipientQualification?`<div class="hn-qualification">${escapeHtml(s.recipientQualification)}</div>`:""}${recipientLines.map(line=>`<div class="hn-address-line">${escapeHtml(line)}</div>`).join("")}<div class="hn-block-gap"></div><div class="hn-section-title">Vertretender Arzt:</div><div class="hn-name">${escapeHtml(s.issuerName||"")}</div>${s.issuerQualification?`<div class="hn-qualification">${escapeHtml(s.issuerQualification)}</div>`:""}${issuerLines.map(line=>`<div class="hn-address-line">${escapeHtml(line)}</div>`).join("")}<div class="hn-iban">IBAN: ${escapeHtml(s.iban||"")}</div><hr class="hn-rule"><div class="hn-body"><p>${escapeHtml(s.salutation||"")}</p><p class="hn-intro">Anbei übermittle ich die monatliche Honorarnote für meine ärztliche Vertretungstätigkeit<br>für den Monat <strong>${MONTHS[Number(m)-1]} ${y}</strong>.</p><div class="hn-summary"><div>-</div><div>Leistungszeitraum:</div><div>${escapeHtml(modelPeriod(y,m))}</div><div>-</div><div>Gesamtstunden:</div><div>${escapeHtml(invoiceRateText(es,hrs))}</div><div class="spacer"></div><div>-</div><div>Gesamthonorar:</div><div>${escapeHtml(modelMoney(total))}</div></div><div class="hn-legal"><p>${escapeHtml(s.taxNote||"")}</p><p>${escapeHtml(s.paymentText||"")}</p></div><div class="hn-signoff"><div>Mit freundlichen Grüßen,</div><div>${escapeHtml(s.signoffName||"")}</div></div></div>`}
 function invoicePeriodChanged(){invNumber.value=defaultInvoiceNumber(invYear.value,invMonth.value);renderInvoice()}[invYear,invMonth].forEach(x=>x.addEventListener("change",invoicePeriodChanged));[invNumber,invDate].forEach(x=>x.addEventListener("change",renderInvoice));invNumber.addEventListener("input",renderInvoice);
 function pdfEsc(s){const map={"ä":"\\344","ö":"\\366","ü":"\\374","Ä":"\\304","Ö":"\\326","Ü":"\\334","ß":"\\337","€":"\\200","é":"\\351","è":"\\350","á":"\\341","à":"\\340","–":"\\226","—":"\\227","„":"\\204","“":"\\223","”":"\\224","’":"\\222","…":"\\205","§":"\\247"};let out="";for(const ch of String(s??"")){if(ch==="\\")out+="\\\\";else if(ch==="(")out+="\\(";else if(ch===")")out+="\\)";else if(ch.charCodeAt(0)>=32&&ch.charCodeAt(0)<=126)out+=ch;else out+=map[ch]||"?"}return out}function pdfText(x,y,size,text,bold=false){const hz=bold?88:93;return`BT /${bold?"F2":"F1"} ${size} Tf ${hz} Tz 1 0 0 1 ${x} ${y} Tm (${pdfEsc(text)}) Tj ET\n`}function pdfLine(x1,y1,x2,y2,w=.6){return`${w} w ${x1} ${y1} m ${x2} ${y2} l S\n`}function pdfTextWidth(text,size,bold=false){const special={" ":278,"!":278,'"':355,"#":556,"$":556,"%":889,"&":667,"'":191,"(":333,")":333,"*":389,"+":584,",":278,"-":333,".":278,"/":278,":":278,";":278,"<":584,"=":584,">":584,"?":556,"@":1015,"I":278,"J":500,"M":833,"W":944,"i":222,"j":222,"l":222,"m":833,"w":722,"f":278,"t":278,"r":333,"1":556};let units=0;for(const ch of String(text||"")){if(special[ch]!=null)units+=special[ch];else if(/[A-ZÄÖÜ]/.test(ch))units+=667;else if(/[0-9]/.test(ch))units+=556;else units+=556}return units/1000*size*(bold?.88:.93)}function pdfRight(y,size,text,right=547,bold=false){return pdfText(right-pdfTextWidth(text,size,bold),y,size,text,bold)}function pdfWrapLines(text,size,maxWidth){const words=String(text||"").trim().split(/\s+/).filter(Boolean),lines=[];let line="";for(const word of words){const test=line?`${line} ${word}`:word;if(pdfTextWidth(test,size)<=maxWidth||!line)line=test;else{lines.push(line);line=word}}if(line)lines.push(line);return lines}function buildPdf(content){const objs=[];objs[1]="<< /Type /Catalog /Pages 2 0 R >>";objs[2]="<< /Type /Pages /Kids [3 0 R] /Count 1 >>";objs[3]="<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>";objs[4]=`<< /Length ${content.length} >>\nstream\n${content}endstream`;objs[5]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";objs[6]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";let pdf="%PDF-1.4\n",off=[0];for(let i=1;i<objs.length;i++){off[i]=pdf.length;pdf+=`${i} 0 obj\n${objs[i]}\nendobj\n`}const xref=pdf.length;pdf+=`xref\n0 ${objs.length}\n0000000000 65535 f \n`;for(let i=1;i<objs.length;i++)pdf+=String(off[i]).padStart(10,"0")+" 00000 n \n";pdf+=`trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;return new Blob([pdf],{type:"application/pdf"})}
 async function createInvoicePdfBlob(){
@@ -512,21 +512,23 @@ function clearPkce(){localStorage.removeItem(DROPBOX_PKCE_KEY);sessionStorage.re
 async function connectDropboxFlow(){const appKey=DROPBOX_APP_KEY;setDropboxAppKey.value=DROPBOX_APP_KEY;state.settings.dropboxAppKey=DROPBOX_APP_KEY;if(!appKey){alert("Dropbox App Key ist nicht verfügbar.");return}if(!window.isSecureContext||!crypto?.subtle){alert("Dropbox-Verbindung benötigt die veröffentlichte HTTPS-Version der App.");return}state.settings.dropboxAppKey=appKey;state.settings.dropboxSyncPath=setDropboxPath.value.trim()||"/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json";state.settings._updatedAt=nowISO();saveState(false);const verifier=randomVerifier(),digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(verifier)),challenge=base64url(digest),redir=redirectURL();savePkce({verifier,appKey,redirectUri:redir,createdAt:Date.now()});const qs=new URLSearchParams({client_id:appKey,response_type:"code",redirect_uri:redir,code_challenge:challenge,code_challenge_method:"S256",token_access_type:"offline"}),authUrl="https://www.dropbox.com/oauth2/authorize?"+qs.toString();const w=window.open(authUrl,"_blank");if(!w){location.assign(authUrl)}}
 async function tokenRequest(params){const r=await fetch("https://api.dropboxapi.com/oauth2/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams(params)});if(!r.ok)throw new Error(await r.text());return r.json()}
 async function handleDropboxCallback(){const q=new URLSearchParams(location.search),code=q.get("code"),err=q.get("error");if(err){setDropboxStatus("Dropbox-Verbindung abgebrochen.","warn");history.replaceState({},document.title,location.pathname);return}if(!code)return;const pkce=loadPkce(),appKey=state.settings.dropboxAppKey||pkce.appKey||DROPBOX_APP_KEY,ver=pkce.verifier||sessionStorage.getItem("dropboxCodeVerifier"),redir=pkce.redirectUri||redirectURL();if(pkce.appKey&&!state.settings.dropboxAppKey){state.settings.dropboxAppKey=pkce.appKey;saveState(false)}if(!appKey||!ver){setDropboxStatus("Dropbox-Rückleitung erkannt, aber die iOS-Anmeldedaten fehlen. Bitte erneut auf „Mit Dropbox verbinden“ tippen.","warn");return}try{setDropboxStatus("Dropbox wird verbunden…","busy");const r=await tokenRequest({code,grant_type:"authorization_code",client_id:appKey,redirect_uri:redir,code_verifier:ver});saveAuth({accessToken:r.access_token,refreshToken:r.refresh_token||"",expiresAt:r.expires_in?Date.now()+r.expires_in*1000:0});history.replaceState({},document.title,location.pathname);clearPkce();setDropboxStatus("Dropbox verbunden.","on");await syncWithDropbox();try{if(window.opener&&!window.opener.closed){window.opener.postMessage({type:"vertretung-dropbox-connected"},location.origin);setTimeout(()=>window.close(),450)}}catch(_){}}catch(e){console.error(e);setDropboxStatus("Dropbox-Verbindung fehlgeschlagen.","warn")}}
-window.addEventListener("message",ev=>{if(ev.origin===location.origin&&ev.data?.type==="vertretung-dropbox-connected"){loadSettingsForm();setDropboxStatus("Dropbox verbunden.","on");setTimeout(syncWithDropbox,250)}});
+window.addEventListener("message",ev=>{if(ev.origin===location.origin&&ev.data?.type==="vertretung-dropbox-connected"){loadSettingsForm();setDropboxStatus("Dropbox verbunden.","on");setTimeout(()=>syncWithDropbox(),250)}});
+/* V6.12: Dropbox verlangt reines ASCII im Header – Umlaute (z. B. "Selbständigkeit") als \uXXXX maskieren. */
+function dbxArg(o){return JSON.stringify(o).replace(/[\u007f-\uffff]/g,c=>"\\u"+c.charCodeAt(0).toString(16).padStart(4,"0"))}
 async function ensureAccessToken(){const a=authData(),appKey=state.settings.dropboxAppKey||DROPBOX_APP_KEY;if(!appKey)throw new Error("Dropbox App Key fehlt");if(a.accessToken&&(!a.expiresAt||a.expiresAt>Date.now()+60000))return a.accessToken;if(a.refreshToken){const r=await tokenRequest({grant_type:"refresh_token",refresh_token:a.refreshToken,client_id:appKey});const next={...a,accessToken:r.access_token,expiresAt:r.expires_in?Date.now()+r.expires_in*1000:0};saveAuth(next);return next.accessToken}throw new Error("Dropbox-Anmeldung abgelaufen")}
 async function dbxRpc(endpoint,arg){const token=await ensureAccessToken(),r=await fetch("https://api.dropboxapi.com/2/"+endpoint,{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(arg||{})});if(!r.ok)throw new Error(await r.text());return r.json()}
-async function dbxDownload(path){const token=await ensureAccessToken(),r=await fetch("https://content.dropboxapi.com/2/files/download",{method:"POST",headers:{Authorization:"Bearer "+token,"Dropbox-API-Arg":JSON.stringify({path})}});if(r.status===409){const txt=await r.text();if(txt.includes("not_found"))return null;throw new Error(txt)}if(!r.ok)throw new Error(await r.text());return r.blob()}
+async function dbxDownload(path){const token=await ensureAccessToken(),r=await fetch("https://content.dropboxapi.com/2/files/download",{method:"POST",headers:{Authorization:"Bearer "+token,"Dropbox-API-Arg":dbxArg({path})}});if(r.status===409){const txt=await r.text();if(txt.includes("not_found"))return null;throw new Error(txt)}if(!r.ok)throw new Error(await r.text());return r.blob()}
 async function ensureDropboxFolders(path){const parts=String(path||"").split("/").filter(Boolean).slice(0,-1);let cur="";for(const part of parts){cur+="/"+part;try{await dbxRpc("files/create_folder_v2",{path:cur,autorename:false})}catch(e){if(!String(e.message||e).includes("conflict"))throw e}}}
-async function dbxUpload(path,blob){await ensureDropboxFolders(path);const token=await ensureAccessToken(),r=await fetch("https://content.dropboxapi.com/2/files/upload",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/octet-stream","Dropbox-API-Arg":JSON.stringify({path,mode:"overwrite",autorename:false,mute:true,strict_conflict:false})},body:blob});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function dbxUpload(path,blob){await ensureDropboxFolders(path);const token=await ensureAccessToken(),r=await fetch("https://content.dropboxapi.com/2/files/upload",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/octet-stream","Dropbox-API-Arg":dbxArg({path,mode:"overwrite",autorename:false,mute:true,strict_conflict:false})},body:blob});if(!r.ok)throw new Error(await r.text());return r.json()}
 function cleanStateForCloud(s){return clone(s)}function mergeCollections(local,remote,deletedL,deletedR){const del={...(deletedR||{})};for(const[id,t]of Object.entries(deletedL||{})){if(!del[id]||new Date(t)>new Date(del[id]))del[id]=t}const map=new Map();for(const obj of[...(remote||[]),...(local||[])]){const cur=map.get(obj.id);if(!cur||new Date(obj.updatedAt||0)>new Date(cur.updatedAt||0))map.set(obj.id,obj)}for(const[id,t]of Object.entries(del)){const obj=map.get(id);if(obj&&new Date(t)>=new Date(obj.updatedAt||0))map.delete(id)}return{items:[...map.values()],deleted:del}}
 function mergeInvoices(local=[],remote=[]){const map=new Map(),stamp=r=>new Date(r.updatedAt||r.mailOpenedAt||r.signedAt||r.createdAt||0).getTime();for(const r of[...remote,...local]){if(!r?.key)continue;const cur=map.get(r.key);if(!cur||stamp(r)>=stamp(cur))map.set(r.key,r)}return[...map.values()]}function mergeStates(local,remote){remote=normalizeState(remote);const em=mergeCollections(local.entries,remote.entries,local.deletedEntries,remote.deletedEntries),pm=mergeCollections(local.parkingRecords,remote.parkingRecords,local.deletedParking,remote.deletedParking),ls=local.settings||{},rs=remote.settings||{},settings=new Date(ls._updatedAt||0)>=new Date(rs._updatedAt||0)?ls:rs,invoices=mergeInvoices(local.invoices,remote.invoices);return normalizeState({entries:em.items,parkingRecords:pm.items,invoices,deletedEntries:em.deleted,deletedParking:pm.deleted,settings})}
 async function downloadCloudState(path){const blob=await dbxDownload(path);if(!blob)return null;return JSON.parse(await blob.text())}async function uploadCloudState(path,data){return dbxUpload(path,new Blob([JSON.stringify(data,null,2)],{type:"application/json"}))}
 function bestEntryIdForParking(r){return bestParkingAssignment(r).id}
 function mergeEasyParkImport(doc){const recs=Array.isArray(doc)?doc:(doc?.records||[]);let added=0,updated=0;for(const r of recs){if(!r||!r.messageId||!r.date)continue;const id="easypark-"+String(r.messageId).replace(/[^a-zA-Z0-9_-]/g,""),existing=state.parkingRecords.find(p=>p.id===id),tmp={date:r.date,start:r.start||"",end:r.end||""},best=bestParkingAssignment(tmp);const incoming={id,date:r.date,start:r.start||"",end:r.end||"",amount:Number(r.amount||0),vat:Number(r.vat||0),provider:"EasyPark",city:r.city||"",zone:r.zone||"",entryId:(existing?.assignmentMode==="manual"?existing.entryId:(r.entryId||best.id||"")),assignmentMode:(existing?.assignmentMode==="manual"?"manual":"auto"),assignmentReason:(existing?.assignmentMode==="manual"?existing.assignmentReason:(best.reason||"")),documentType:r.documentType||"confirmation",source:"EasyPark/Gmail",sourceMessageId:r.messageId,receiptName:r.receiptName||"",dropboxReceiptPath:r.dropboxReceiptPath||"",officialUrl:r.officialUrl||"",note:r.note||"",updatedAt:r.updatedAt||r.importedAt||nowISO()};const ix=state.parkingRecords.findIndex(p=>p.id===id);if(ix<0){state.parkingRecords.push(incoming);added++}else if(new Date(incoming.updatedAt)>new Date(state.parkingRecords[ix].updatedAt||0)||state.parkingRecords[ix].assignmentMode==="auto"){state.parkingRecords[ix]={...state.parkingRecords[ix],...incoming};updated++}}reconcileParkingAssignments();return{added,updated,total:recs.length}}
 async function importEasyParkFromDropbox(showResult=false){if(!isDropboxConnected()){if(showResult)alert("Bitte zuerst Dropbox verbinden.");return{added:0,updated:0,total:0}}const path=state.settings.easyParkImportPath||"/Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json";try{easyParkStatus.textContent="EasyPark-Import wird gelesen…";easyParkDot.className="dot busy";const blob=await dbxDownload(path);if(!blob){easyParkStatus.textContent="Noch keine EasyPark-Importdatei in Dropbox";easyParkDot.className="dot";return{added:0,updated:0,total:0}}const result=mergeEasyParkImport(JSON.parse(await blob.text()));easyParkStatus.textContent=`${result.total} Datensätze verfügbar · ${result.added} neu · ${result.updated} aktualisiert`;easyParkDot.className="dot on";if(showResult)alert(`EasyPark: ${result.added} neue und ${result.updated} aktualisierte Parkvorgänge übernommen.`);return result}catch(e){console.error(e);easyParkStatus.textContent="EasyPark-Import konnte nicht gelesen werden";easyParkDot.className="dot busy";if(showResult)alert("EasyPark-Import fehlgeschlagen.");return{added:0,updated:0,total:0}}}
-async function syncWithDropbox(){if(!isDropboxConnected()){setDropboxStatus("Nicht verbunden");return}const path=state.settings.dropboxSyncPath||"/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json";try{setDropboxStatus("Synchronisiere…","busy");const remote=await downloadCloudState(path);if(remote)state=mergeStates(state,remote);await importEasyParkFromDropbox(false);reconcileParkingAssignments();await uploadCloudState(path,cleanStateForCloud(state));saveState(false);loadSettingsForm();refreshAll();setDropboxStatus(`Synchronisiert · ${new Date().toLocaleTimeString("de-AT",{hour:"2-digit",minute:"2-digit"})}`,"on")}catch(e){console.error(e);setDropboxStatus("Synchronisierung fehlgeschlagen – ggf. Dropbox neu verbinden.","warn")}}
+async function syncWithDropbox(opts){/* V6.12: Logik im Sync-Kern (#v612-sync-core) */return window.ordipilotSync?window.ordipilotSync(opts):false}
 function scheduleDropboxSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncWithDropbox(),1800)}async function uploadReceiptToDropbox(p,file){const ext=(file.name.split(".").pop()||"bin").replace(/[^a-z0-9]/gi,""),ym=p.date.slice(0,7).replace("-","/"),safeProv=(p.provider||"Parken").replace(/[^a-z0-9äöü_-]/gi,"_"),path=`/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/${ym}/${safeProv}_${p.date}_${(p.start||"0000").replace(":","")}-${(p.end||"0000").replace(":","")}_${Number(p.amount).toFixed(2).replace(".","-")}EUR_${p.id}.${ext}`;await dbxUpload(path,file);p.dropboxReceiptPath=path;p.updatedAt=nowISO();return path}async function dropboxTemporaryLink(path){const r=await dbxRpc("files/get_temporary_link",{path});return r.link}
-reassignParking.onclick=()=>{const r=reconcileParkingAssignments(true);saveState();refreshAll();alert(`Parkzuordnung neu berechnet: ${r.assigned} Vorgänge zugeordnet${r.changed?` · ${r.changed} geändert`:""}.`)};connectDropbox.onclick=connectDropboxFlow;syncDropbox.onclick=syncWithDropbox;syncEasyPark.onclick=async()=>{await importEasyParkFromDropbox(true);saveState();refreshAll()};disconnectDropbox.onclick=()=>{if(confirm("Dropbox-Verbindung nur auf diesem Gerät löschen? Die Dateien in Dropbox bleiben erhalten.")){localStorage.removeItem(AUTH_KEY);setDropboxStatus("Nicht verbunden")}}
+reassignParking.onclick=()=>{const r=reconcileParkingAssignments(true);saveState();refreshAll();alert(`Parkzuordnung neu berechnet: ${r.assigned} Vorgänge zugeordnet${r.changed?` · ${r.changed} geändert`:""}.`)};connectDropbox.onclick=connectDropboxFlow;syncDropbox.onclick=()=>syncWithDropbox({interactive:true});syncEasyPark.onclick=async()=>{await importEasyParkFromDropbox(true);saveState();refreshAll()};disconnectDropbox.onclick=()=>{if(confirm("Dropbox-Verbindung nur auf diesem Gerät löschen? Die Dateien in Dropbox bleiben erhalten.")){localStorage.removeItem(AUTH_KEY);setDropboxStatus("Nicht verbunden")}}
 openIOSShortcut.onclick=()=>{const name=calendarShortcutName();if(!isIOSDevice()){alert("Der Apple-Kurzbefehl wird auf iPhone/iPad verwendet. Auf anderen Geräten erzeugt die Kalender-Schaltfläche stattdessen eine .ics-Datei.");return}window.location.href=`shortcuts://open-shortcut?name=${encodeURIComponent(name)}`};
 function loadSettingsForm(){const s=state.settings;setRate.value=s.defaultRate;setReserve.value=s.reservePct;setMorningStart.value=s.morningStart||"08:00";setMorningEnd.value=s.morningEnd||"13:00";setAfternoonStart.value=s.afternoonStart||"13:00";setAfternoonEnd.value=s.afternoonEnd||"18:00";setFullDayStart.value=s.fullDayStart||"08:00";setFullDayEnd.value=s.fullDayEnd||"17:00";setService.value=s.serviceDescription||"";setSalutation.value=s.salutation||"";setSignoffName.value=s.signoffName||"";setPayment.value=s.paymentText||"";setTaxNote.value=s.taxNote||"";setIssuerName.value=s.issuerName||"";setIssuerQualification.value=s.issuerQualification||"";setIssuerAddress.value=s.issuerAddress||"";setIssuerEmail.value=s.issuerEmail||"";setIssuerPhone.value=s.issuerPhone||"";setIban.value=s.iban||"";setBic.value=s.bic||"";setTaxNumber.value=s.taxNumber||"";setRecipientName.value=s.recipientName||"";setRecipientQualification.value=s.recipientQualification||"";setRecipientAddress.value=s.recipientAddress||"";setRecipientEmail.value=s.recipientEmail||"";setInvoiceMailShortcut.value=s.invoiceMailShortcut||"Honorarnote senden";setInvoiceDropboxBase.value=s.invoiceDropboxBase||"/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten";setDropboxAppKey.value=DROPBOX_APP_KEY;setDropboxPath.value=s.dropboxSyncPath||"/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json";setEasyParkImportPath.value=s.easyParkImportPath||"/Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json";setIOSShortcutName.value=s.iosShortcutName||"Vertretung Familienkalender";setCalendarTargetName.value=s.calendarTargetName||"Vertretung Ordination";setCalendarEventTitle.value=s.calendarEventTitle||"Vertretung Dr. Vakil-Adli";setCalendarEventLocation.value=s.calendarEventLocation||"Stockerauer Str. 5/6, 2100 Korneuburg";setCalendarAutoSync.checked=s.calendarAutoSync!==false;setCalendarAutoDelete.checked=s.calendarAutoDelete!==false;setCalendarButtonEnabled.checked=s.calendarButtonEnabled!==false;setDropboxAuto.checked=!!s.dropboxAutoSync;redirectUri.textContent=redirectURL();setDropboxStatus(isDropboxConnected()?"Auf diesem Gerät verbunden":"Nicht verbunden",isDropboxConnected()?"on":"off")}
 function saveSettingsForm(){Object.assign(state.settings,{defaultRate:Number(setRate.value||170),reservePct:Number(setReserve.value||0),morningStart:setMorningStart.value||"08:00",morningEnd:setMorningEnd.value||"13:00",afternoonStart:setAfternoonStart.value||"13:00",afternoonEnd:setAfternoonEnd.value||"18:00",fullDayStart:setFullDayStart.value||"08:00",fullDayEnd:setFullDayEnd.value||"17:00",serviceDescription:setService.value.trim(),salutation:setSalutation.value.trim(),signoffName:setSignoffName.value.trim(),paymentText:setPayment.value.trim(),taxNote:setTaxNote.value.trim(),issuerName:setIssuerName.value.trim(),issuerQualification:setIssuerQualification.value.trim(),issuerAddress:setIssuerAddress.value.trim(),issuerEmail:setIssuerEmail.value.trim(),issuerPhone:setIssuerPhone.value.trim(),iban:setIban.value.trim(),bic:setBic.value.trim(),taxNumber:setTaxNumber.value.trim(),recipientName:setRecipientName.value.trim(),recipientQualification:setRecipientQualification.value.trim(),recipientAddress:setRecipientAddress.value.trim(),recipientEmail:setRecipientEmail.value.trim(),invoiceMailShortcut:setInvoiceMailShortcut.value.trim()||"Honorarnote senden",invoiceDropboxBase:setInvoiceDropboxBase.value.trim()||"/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten",dropboxAppKey:DROPBOX_APP_KEY,dropboxSyncPath:setDropboxPath.value.trim()||"/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json",easyParkImportPath:setEasyParkImportPath.value.trim()||"/Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json",iosShortcutName:setIOSShortcutName.value.trim()||"Vertretung Familienkalender",calendarTargetName:setCalendarTargetName.value.trim()||"Vertretung Ordination",calendarGroupName:"Familienkalender",calendarEventTitle:setCalendarEventTitle.value.trim()||"Vertretung Dr. Vakil-Adli",calendarEventLocation:setCalendarEventLocation.value.trim()||"Stockerauer Str. 5/6, 2100 Korneuburg",calendarAutoSync:setCalendarAutoSync.checked,calendarAutoDelete:setCalendarAutoDelete.checked,calendarButtonEnabled:setCalendarButtonEnabled.checked,dropboxAutoSync:setDropboxAuto.checked,_updatedAt:nowISO()});saveState();refreshAll(false)}["setRate","setReserve","setMorningStart","setMorningEnd","setAfternoonStart","setAfternoonEnd","setFullDayStart","setFullDayEnd","setService","setSalutation","setSignoffName","setPayment","setTaxNote","setIssuerName","setIssuerQualification","setIssuerAddress","setIssuerEmail","setIssuerPhone","setIban","setBic","setTaxNumber","setRecipientName","setRecipientQualification","setRecipientAddress","setRecipientEmail","setInvoiceMailShortcut","setInvoiceDropboxBase","setDropboxAppKey","setDropboxPath","setEasyParkImportPath","setIOSShortcutName","setCalendarTargetName","setCalendarEventTitle","setCalendarEventLocation","setCalendarAutoSync","setCalendarAutoDelete","setCalendarButtonEnabled","setDropboxAuto"].forEach(id=>document.getElementById(id).addEventListener("change",saveSettingsForm));
@@ -571,9 +573,9 @@ async function acceptSignedInvoice(file){if(!file)return;if(file.type&&file.type
 function unlockInvoiceCorrectionV63(){const rec=invoiceRecord();if(!rec?.signedAt)return;if(!confirm(`Die signierte Honorarnote ${rec.number} bleibt unverändert archiviert. Für diesen Monat wird eine neue Korrektur-Honorarnote mit neuer Nummer angelegt. Fortfahren?`))return;const periodKey=rec.key,archiveKey=`${periodKey}#${rec.number}#${Date.now()}`,ix=state.invoices.findIndex(r=>r.key===periodKey),archived={...rec,key:archiveKey,archivedRecord:true,originalPeriodKey:periodKey,finalizedAt:rec.finalizedAt||rec.signedAt||nowISO(),updatedAt:nowISO()};if(ix>=0)state.invoices[ix]=archived;const next=defaultInvoiceNumber(rec.year,rec.month);state.invoices.push({key:periodKey,year:rec.year,month:rec.month,number:next,invoiceDate:todayISO(),correctionOf:rec.number,correctionUnlockedAt:nowISO(),updatedAt:nowISO()});invNumber.value=next;invDate.value=todayISO();saveState();renderInvoice();refreshAll(false);alert(`Korrekturmodus aktiviert. Die ursprüngliche Honorarnote ${rec.number} bleibt erhalten. Neue Nummer: ${next}.`)}
 function setDropboxStatus(text,type="off"){if(window.dropboxStatus)dropboxStatus.textContent=text;if(window.dropboxDot)dropboxDot.className="dot"+(type==="on"?" on":type==="busy"||type==="warn"?" busy":"");if(window.globalSyncStatus){globalSyncStatus.textContent=(type==="on"?"Dropbox · ":type==="busy"?"Dropbox · ":"")+text;globalSyncStatus.className="sub "+(type==="on"?"v63-sync-ok":type==="busy"||type==="warn"?"v63-sync-warn":"v63-sync-off")}}
 async function maybeCloudBackupV63(){if(!isDropboxConnected())return;const day=todayISO(),last=localStorage.getItem("vertretungsabrechnung-last-cloud-backup");if(last===day)return;try{const path=`/Ordination & Selbständigkeit/Vertretungsdienste/System/backup_${day}.json`,blob=new Blob([JSON.stringify(cleanStateForCloud(state),null,2)],{type:"application/json"});await dbxUpload(path,blob);localStorage.setItem("vertretungsabrechnung-last-cloud-backup",day)}catch(e){console.warn("Cloud-Backup fehlgeschlagen",e)}}
-async function syncWithDropbox(){if(!isDropboxConnected()){setDropboxStatus("Nicht verbunden");return}const path=state.settings.dropboxSyncPath||"/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json";try{setDropboxStatus("Synchronisiere…","busy");const remote=await downloadCloudState(path);if(remote)state=mergeStates(state,remote);await importEasyParkFromDropbox(false);reconcileParkingAssignments();await maybeCloudBackupV63();await uploadCloudState(path,cleanStateForCloud(state));saveState(false);loadSettingsForm();refreshAll();setDropboxStatus(`synchronisiert · ${new Date().toLocaleTimeString("de-AT",{hour:"2-digit",minute:"2-digit"})}`,"on")}catch(e){console.error(e);setDropboxStatus("Synchronisierung fehlgeschlagen – Daten lokal sicher","warn")}}
+async function syncWithDropbox(opts){/* V6.12: Logik im Sync-Kern (#v612-sync-core) */return window.ordipilotSync?window.ordipilotSync(opts):false}
 function v63OnlineStatus(){if(!navigator.onLine){if(window.globalSyncStatus){globalSyncStatus.textContent="Offline · Änderungen lokal gespeichert";globalSyncStatus.className="sub v63-sync-warn"}}else if(!isDropboxConnected()){setDropboxStatus("Lokal gespeichert · Dropbox nicht verbunden","off")}}
-function init(){setupSelectors();dashYear.value=String(state.settings.year||2026);entryYear.value=String(state.settings.year||2026);parkingYear.value=String(state.settings.year||2026);invYear.value=String(state.settings.year||2026);invDate.value=todayISO();invMonth.value=String(new Date().getMonth()+1).padStart(2,"0");const rec=invoiceRecord(invYear.value,invMonth.value);invNumber.value=rec?.number||defaultInvoiceNumber(invYear.value,invMonth.value);loadSettingsForm();refreshAll(false);if(window.invoiceUnlockCorrection)invoiceUnlockCorrection.onclick=unlockInvoiceCorrectionV63;window.addEventListener("online",v63OnlineStatus);window.addEventListener("offline",v63OnlineStatus);v63OnlineStatus();if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("service-worker.js").catch(console.warn);handleDropboxCallback().then(()=>{if(state.settings.dropboxAutoSync&&isDropboxConnected()&&!new URLSearchParams(location.search).get("code"))setTimeout(syncWithDropbox,600)})}
+function init(){setupSelectors();dashYear.value=String(state.settings.year||2026);entryYear.value=String(state.settings.year||2026);parkingYear.value=String(state.settings.year||2026);invYear.value=String(state.settings.year||2026);invDate.value=todayISO();invMonth.value=String(new Date().getMonth()+1).padStart(2,"0");const rec=invoiceRecord(invYear.value,invMonth.value);invNumber.value=rec?.number||defaultInvoiceNumber(invYear.value,invMonth.value);loadSettingsForm();refreshAll(false);if(window.invoiceUnlockCorrection)invoiceUnlockCorrection.onclick=unlockInvoiceCorrectionV63;window.addEventListener("online",v63OnlineStatus);window.addEventListener("offline",v63OnlineStatus);v63OnlineStatus();if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("service-worker.js").catch(console.warn);handleDropboxCallback().then(()=>{if(state.settings.dropboxAutoSync&&isDropboxConnected()&&!new URLSearchParams(location.search).get("code"))setTimeout(()=>syncWithDropbox(),600)})}
 
 function setupSettingsAccordions(){document.querySelectorAll(".settings-grid>.card").forEach(card=>{if(card.dataset.accordionReady)return;const h=card.querySelector(":scope>h3");if(!h)return;card.dataset.accordionReady="1";const body=document.createElement("div");body.className="settings-accordion-body";while(h.nextSibling)body.appendChild(h.nextSibling);const head=document.createElement("button");head.type="button";head.className="settings-accordion-head";head.innerHTML=`<span>${escapeHtml(h.textContent)}</span><span class="chev">›</span>`;h.replaceWith(head);body.hidden=true;card.appendChild(body);head.onclick=()=>{const open=!card.classList.contains("settings-open");card.classList.toggle("settings-open",open);body.hidden=!open}})}setupSettingsAccordions();if(window.entryCloseTop)entryCloseTop.onclick=()=>entryDialog.close();if(window.parkingCloseTop)parkingCloseTop.onclick=()=>parkingDialog.close();if(window.timePresetBar)timePresetBar.querySelectorAll("[data-time-preset]").forEach(b=>b.onclick=()=>applyTimePreset(b.dataset.timePreset));[fStart,fEnd].forEach(el=>el.addEventListener("change",()=>{updateTimePresetActive();updateCalc()}));if(window.parkingCalPrev)parkingCalPrev.onclick=()=>{parkingPlannerCursor=new Date(parkingPlannerCursor.getFullYear(),parkingPlannerCursor.getMonth()-1,1);renderParkingCalendar()};if(window.parkingCalNext)parkingCalNext.onclick=()=>{parkingPlannerCursor=new Date(parkingPlannerCursor.getFullYear(),parkingPlannerCursor.getMonth()+1,1);renderParkingCalendar()};if(window.parkingCalToday)parkingCalToday.onclick=()=>{pDate.value=todayISO();setParkingPlannerCursor(pDate.value);fillParkingEntryOptions(pEntryId.value,pDate.value);renderParkingCalendar()};if(window.detectParkingLocation)detectParkingLocation.onclick=detectParkingPosition;[dashYear,entryYear,entryMonth,parkingYear,parkingMonth,parkingProviderFilter].forEach(x=>x.addEventListener("change",()=>{renderDashboard();renderEntries();renderParking()}));entrySearch.addEventListener("input",renderEntries);makePdf.onclick=downloadInvoicePdf;quickPdf.onclick=()=>{switchTab("invoice");setTimeout(renderInvoice,0)};addEntry.onclick=()=>openEntry(null,"plan",todayISO());addParking.onclick=()=>openParking();if(window.v6ShowEntries)v6ShowEntries.onclick=()=>switchTab("entries");entryCalPrev.onclick=()=>{entryPlannerCursor=new Date(entryPlannerCursor.getFullYear(),entryPlannerCursor.getMonth()-1,1);renderEntryPlannerCalendar()};entryCalNext.onclick=()=>{entryPlannerCursor=new Date(entryPlannerCursor.getFullYear(),entryPlannerCursor.getMonth()+1,1);renderEntryPlannerCalendar()};entryCalToday.onclick=()=>{fDate.value=todayISO();selectedCalendarDate=fDate.value;setEntryPlannerCursor(fDate.value);updateEntryDateUI();renderEntryPlannerCalendar()};invoiceStartSign.onclick=startInvoiceSignature;invoiceDownloadDraft.onclick=async()=>{const rec=invoiceRecord(),blob=rec?await getInvoiceBlob(`draft:${rec.key}`):null;if(blob)await downloadBlob(blob,rec.filename||invoiceFilename(false));else alert("Bitte Honorarnote zuerst erstellen.")};invoiceSignedFile.onchange=async ev=>{const f=ev.target.files?.[0];if(f)await acceptSignedInvoice(f);ev.target.value=""};invoiceArchiveSigned.onclick=archiveSignedInvoice;invoiceSendMail.onclick=shareSignedInvoice;
 function refreshAll(rebuildSelectors=true){if(rebuildSelectors)setupSelectors();renderDashboard();renderEntries();renderParking();renderInvoice()}init();
@@ -670,7 +672,7 @@ setupV67();
   if(window.setInvoiceDropboxBase){setInvoiceDropboxBase.value="/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten";setInvoiceDropboxBase.readOnly=true;}
 
   function v68Month(v){return String(v).padStart(2,"0")}
-  function v68FinalInvoiceName(y,m){return `${y}-${v68Month(m)}_Honorarnote_Vakil-Adli.pdf`}
+  function v68FinalInvoiceName(y,m){return window.ordipilotInvoiceFilename?window.ordipilotInvoiceFilename(y,m):`${y}-${v68Month(m)}_Honorarnote_Vakil-Adli.pdf`}
   invoiceFilename=function(signed=false){const y=invYear.value,m=invMonth.value;return signed?v68FinalInvoiceName(y,m):`${y}-${v68Month(m)}_Honorarnote_Vakil-Adli_Entwurf.pdf`};
 
   // Final archivierte PDF wieder exakt wie die bisherigen Honorarnoten benennen und direkt im Jahresordner ablegen.
@@ -755,7 +757,7 @@ setupV67();
     signUrl:"https://www.a-trust.at/pdfsign"
   };
   const pad2=v=>String(v).padStart(2,"0");
-  const finalName=(y,m)=>`${y}-${pad2(m)}_Honorarnote_Vakil-Adli.pdf`;
+  const finalName=(y,m)=>window.ordipilotInvoiceFilename?window.ordipilotInvoiceFilename(y,m):`${y}-${pad2(m)}_Honorarnote_Vakil-Adli.pdf`;
   const finalPath=(y,m)=>`${V69.invoices}/${y}/${finalName(y,m)}`;
 
   function migrateV69State(){
@@ -858,16 +860,8 @@ setupV67();
     try{await dbxUpload(path,blob);upsertInvoiceRecord({key:rec.key,filename:finalName(rec.year,rec.month),signedFilename:finalName(rec.year,rec.month),dropboxPath:path,signedDropboxPath:path});renderInvoice();return true}catch(e){console.error(e);return false}
   };
 
-  // Dropbox-/EasyPark-Pfade nach jedem Cloud-Merge auf die neue Struktur normalisieren.
-  const baseSync=syncWithDropbox;
-  syncWithDropbox=async function(){
-    migrateV69State();
-    await baseSync();
-    migrateV69State();
-    // Nach einem Remote-Merge die bereinigten Pfade sofort zurückschreiben.
-    try{if(isDropboxConnected())await uploadCloudState(V69.data,cleanStateForCloud(state))}catch(e){console.warn("V6.9 Pfadmigration konnte nicht zurückgeschrieben werden",e)}
-    loadSettingsForm();refreshAll(false);
-  };
+  // V6.12: Pfadmigration läuft als Hook im Sync-Kern (kein eigener, ungeprüfter Upload mehr).
+  (window.ordipilotSyncHooks=window.ordipilotSyncHooks||[]).push(migrateV69State);
 
   maybeCloudBackupV63=async function(){
     if(!isDropboxConnected())return;const day=todayISO(),last=localStorage.getItem("vertretungsabrechnung-last-cloud-backup");if(last===day)return;
@@ -910,7 +904,7 @@ setupV67();
   invoiceStartSign.onclick=v69StartSignature;
   invoiceSignedFile.onchange=async ev=>{const f=ev.target.files?.[0];if(f)await acceptSignedInvoice(f);ev.target.value=""};
   invoiceArchiveSigned.onclick=archiveSignedInvoice;
-  syncDropbox.onclick=syncWithDropbox;
+  syncDropbox.onclick=()=>syncWithDropbox({interactive:true});
   syncEasyPark.onclick=async()=>{await importEasyParkFromDropbox(true);saveState();refreshAll()};
 
   // Sichtbare Settings sofort auf die bereinigte Struktur setzen.
@@ -1089,7 +1083,7 @@ setupV67();
   const pad=v=>String(v).padStart(2,'0');
   const icon=(name)=>{const d={edit:'<path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 10h18"/>',check:'<path d="m5 12 4 4L19 6"/>',eye:'<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',car:'<path d="m5 16 1-5 2-3h8l2 3 1 5M4 16h16v3H4z"/><circle cx="7" cy="19" r="1"/><circle cx="17" cy="19" r="1"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',money:'<circle cx="12" cy="12" r="9"/><path d="M15 8.5c-.7-.7-1.7-1-3-1-1.7 0-3 .8-3 2s1 1.8 3 2.2 3 1 3 2.3-1.3 2.3-3 2.3c-1.4 0-2.5-.4-3.2-1.2M12 5v14"/>',cloud:'<path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18Z"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19 12h2M3 12h2M12 3v2M12 19v2M17 7l1.5-1.5M5.5 18.5 7 17M17 17l1.5 1.5M5.5 5.5 7 7"/>',send:'<path d="m3 11 18-8-8 18-2-8-8-2Z"/><path d="m11 13 10-10"/>',time:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5h4"/>',back:'<path d="m15 18-6-6 6-6"/>'};return `<svg viewBox="0 0 24 24" aria-hidden="true">${d[name]||''}</svg>`};
 
-  function normalizeRecipient(raw,i=0){return {id:String(raw?.id||`recipient-${Date.now().toString(36)}-${i}`),name:String(raw?.name||''),qualification:String(raw?.qualification||''),address:String(raw?.address||''),email:String(raw?.email||'')}}
+  function normalizeRecipient(raw,i=0){return {...(raw&&typeof raw==='object'?raw:{}),id:String(raw?.id||`recipient-${Date.now().toString(36)}-${i}`),name:String(raw?.name||''),qualification:String(raw?.qualification||''),address:String(raw?.address||''),email:String(raw?.email||'')}}
   function ensureRecipients(){const s=state.settings||(state.settings={});let arr=Array.isArray(s.recipients)?s.recipients.map(normalizeRecipient):[];if(!arr.length){arr=[normalizeRecipient({id:'recipient-primary',name:s.recipientName||'',qualification:s.recipientQualification||'',address:s.recipientAddress||'',email:s.recipientEmail||''})]}s.recipients=arr;if(!s.activeRecipientId||!arr.some(r=>r.id===s.activeRecipientId))s.activeRecipientId=arr[0].id;const primary=arr[0];for(const e of state.entries||[])if(!e.recipientId)e.recipientId=primary.id;for(const r of state.invoices||[]){if(r.archivedRecord)continue;if(!r.recipientId)r.recipientId=primary.id;if(r.key&&!r.key.includes('::'))r.key=`${r.key}::${r.recipientId}`}applyRecipientToLegacy(s.activeRecipientId,false);return arr}
   function recipients(){return ensureRecipients()}
   function recipientById(id){return recipients().find(r=>r.id===id)||recipients()[0]}
@@ -1169,15 +1163,486 @@ setupV67();
   const baseRenderParkingV611=renderParking;renderParking=function(){baseRenderParkingV611();const arr=filteredParking(),currentMk=todayISO().slice(0,7),groups=new Map();arr.forEach(p=>{const mk=p.date.slice(0,7);if(!groups.has(mk))groups.set(mk,[]);groups.get(mk).push(p)});const keys=[...groups.keys()].sort().reverse();parkingCards.innerHTML=keys.length?keys.map(mk=>{const ps=groups.get(mk),[yy,mm]=mk.split('-'),total=ps.reduce((a,p)=>a+parkAmount(p),0),open=mk===currentMk;return `<details class="v62-month-group" ${open?'open':''}><summary><div><div class="v62-month-group-title">${MONTHS[Number(mm)-1]} ${yy}</div><div class="v62-month-group-meta">${ps.length} Vorgänge · ${ps.filter(p=>p.receiptName||p.dropboxReceiptPath||p.officialUrl).length} Dokumente${ps.some(p=>!p.entryId)?` · ${ps.filter(p=>!p.entryId).length} offen`:''}</div></div><div class="v62-month-group-total">${euro(total)}</div></summary><div class="v62-month-group-body">${ps.sort((a,b)=>(b.date+(b.start||'')).localeCompare(a.date+(a.start||''))).map(parkingCard611).join('')}</div></details>`}).join(''):'<div class="v6-open-empty">Keine Parkvorgänge im ausgewählten Jahr.</div>';bindParkingActions();if(parkingFocusUnassigned)setTimeout(focusFirstUnassignedParking,60)};
 
   // Cloud merges may bring legacy records: normalize recipients immediately afterwards.
-  const baseSyncV611=syncWithDropbox;syncWithDropbox=async function(){await baseSyncV611();ensureRecipients();repairInvoiceRecordsV611();saveState(false);try{if(isDropboxConnected())await uploadCloudState(state.settings.dropboxSyncPath||'/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json',cleanStateForCloud(state))}catch(e){console.warn('V6.11 Empfänger-Migration konnte nicht zurückgeschrieben werden',e)}loadSettingsForm();renderRecipientManager();refreshAll(false)};if(window.syncDropbox)syncDropbox.onclick=syncWithDropbox;
+  (window.ordipilotSyncHooks=window.ordipilotSyncHooks||[]).push(()=>{ensureRecipients();repairInvoiceRecordsV611()});window.renderRecipientManager=renderRecipientManager;window.ordipilotInvoiceFilename=(y,m)=>`${y}-${pad(m)}_Honorarnote_${recipientToken(activeRecipient())}.pdf`;
 
   // UI copy and version.
   const help=document.querySelector('#panel-entries .v6-page-sub');if(help)help.textContent='Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
-  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.11.0')});
+  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.12.0')});
   applyRecipientToLegacy(state.settings.activeRecipientId,false);if(window.setRecipientName){setRecipientName.value=state.settings.recipientName||'';setRecipientQualification.value=state.settings.recipientQualification||'';setRecipientAddress.value=state.settings.recipientAddress||'';setRecipientEmail.value=state.settings.recipientEmail||''}
   invNumber.value=invoiceRecord()?.number||defaultInvoiceNumber(invYear.value,invMonth.value);
   renderRecipientManager();renderEntries();renderParking();renderInvoice();saveState(false);
 })();
 </script>
 <script id="v6102-calendar-batch-fix">(function(){const base=()=>location.href.split("#")[0].split("?")[0];function cleanUrl(u){u.searchParams.delete("calendarBatch");u.searchParams.delete("calendarBatchName");u.searchParams.delete("calendarBatchTotal");u.searchParams.delete("calendarBatchDone");u.searchParams.delete("calendarBatchComplete");u.searchParams.delete("calendarBatchStopped");try{history.replaceState(null,"",u.pathname+(u.search||"")+(u.hash||""))}catch(e){}}function launch(payloads,name,total=payloads.length,done=0){if(!payloads.length)return;const first=payloads[0],rest=payloads.slice(1),root=base();let success;if(rest.length){const p=new URLSearchParams();p.set("calendarBatch",JSON.stringify(rest));p.set("calendarBatchName",name);p.set("calendarBatchTotal",String(total));p.set("calendarBatchDone",String(done+1));success=root+"?"+p.toString()}else success=root+`?calendarBatchComplete=1&calendarBatchTotal=${total}`;const stop=root+`?calendarBatchStopped=1&calendarBatchTotal=${total}&calendarBatchDone=${done}`;showV65CalendarToast(`Apple Kalender · ${done+1}/${total}`);window.location.href=`shortcuts://x-callback-url/run-shortcut?name=${encodeURIComponent(name)}&input=text&text=${encodeURIComponent(JSON.stringify(first))}&x-success=${encodeURIComponent(success)}&x-cancel=${encodeURIComponent(stop)}&x-error=${encodeURIComponent(stop)}`}function resume(){let u;try{u=new URL(location.href)}catch(e){return}if(u.searchParams.has("calendarBatch")){let rest=[];try{rest=JSON.parse(u.searchParams.get("calendarBatch")||"[]")}catch(e){}const name=u.searchParams.get("calendarBatchName")||"Vertretung Familienkalender",total=Number(u.searchParams.get("calendarBatchTotal")||rest.length),done=Number(u.searchParams.get("calendarBatchDone")||0);cleanUrl(u);if(rest.length)setTimeout(()=>launch(rest,name,total,done),250);return}if(u.searchParams.get("calendarBatchComplete")==="1"){const total=Number(u.searchParams.get("calendarBatchTotal")||0);cleanUrl(u);setTimeout(()=>showV65CalendarToast(`Apple Kalender synchronisiert · ${total}/${total}`),100);return}if(u.searchParams.get("calendarBatchStopped")==="1"){const total=Number(u.searchParams.get("calendarBatchTotal")||0),done=Number(u.searchParams.get("calendarBatchDone")||0);cleanUrl(u);setTimeout(()=>alert(`Kalendersynchronisierung abgebrochen. ${done} von ${total} Terminen wurden verarbeitet.`),120)}}const b=document.getElementById("v68PlanSave");if(b)b.addEventListener("click",()=>{const before=new Set((state.entries||[]).map(e=>e.id));setTimeout(()=>{if(state.settings.calendarAutoSync===false)return;const added=(state.entries||[]).filter(e=>!before.has(e.id));if(added.length>1){const payloads=added.map(e=>entryCalendarPayload(e,"upsert"));launch(payloads,calendarShortcutName())}},350)},true);setTimeout(resume,0)})();</script>
+
+<!-- v6113-hotfix.js ist seit V6.12 fest eingebaut (Marker: verhindert erneutes Einschleusen durch alte Service Worker) -->
+<script id="v612-recipients">
+/* OrdiPilot V6.12 · Empfängerspezifische Honorarnoten-Texte (vormals v6113-hotfix.js, jetzt fest eingebaut). */
+(function(){
+  'use strict';
+  const VERSION='6.12.0';
+  const DEFAULT_ROLE='Ordinationsinhaberin';
+  const DEFAULT_SERVICE='Ärztliche Vertretungstätigkeit';
+
+  function recipientList(){
+    const s=state.settings||(state.settings={});
+    const fallback={serviceDescription:s.serviceDescription||DEFAULT_SERVICE,salutation:s.salutation||'',signoffName:s.signoffName||'',roleLabel:s.roleLabel||DEFAULT_ROLE};
+    let arr=Array.isArray(s.recipients)?s.recipients:[];
+    if(!arr.length){
+      arr=[{id:'recipient-primary',name:s.recipientName||'',qualification:s.recipientQualification||'',address:s.recipientAddress||'',email:s.recipientEmail||'',...fallback}];
+    }
+    arr=arr.map((r,i)=>({
+      ...r,
+      id:String(r?.id||`recipient-${Date.now().toString(36)}-${i}`),
+      name:String(r?.name||''),
+      qualification:String(r?.qualification||''),
+      address:String(r?.address||''),
+      email:String(r?.email||''),
+      serviceDescription:String(r?.serviceDescription ?? fallback.serviceDescription ?? DEFAULT_SERVICE),
+      salutation:String(r?.salutation ?? fallback.salutation ?? ''),
+      signoffName:String(r?.signoffName ?? fallback.signoffName ?? ''),
+      roleLabel:String(r?.roleLabel || DEFAULT_ROLE)
+    }));
+    s.recipients=arr;
+    if(!s.activeRecipientId||!arr.some(r=>r.id===s.activeRecipientId))s.activeRecipientId=arr[0].id;
+    const primary=arr[0];
+    for(const e of state.entries||[])if(!e.recipientId)e.recipientId=primary.id;
+    return arr;
+  }
+  function activeRecipient(){
+    const arr=recipientList(),id=state.settings.activeRecipientId;
+    return arr.find(r=>r.id===id)||arr[0];
+  }
+  function applyRecipientToLegacy(){
+    const r=activeRecipient(),s=state.settings;
+    if(!r)return;
+    s.activeRecipientId=r.id;
+    s.recipientName=r.name||'';
+    s.recipientQualification=r.qualification||'';
+    s.recipientAddress=r.address||'';
+    s.recipientEmail=r.email||'';
+    s.serviceDescription=r.serviceDescription||DEFAULT_SERVICE;
+    s.salutation=r.salutation||'';
+    s.signoffName=r.signoffName||'';
+    s.roleLabel=r.roleLabel||DEFAULT_ROLE;
+  }
+  function syncRecipientFields(){
+    applyRecipientToLegacy();
+    const r=activeRecipient();
+    if(window.setRecipientName)setRecipientName.value=r.name||'';
+    if(window.setRecipientQualification)setRecipientQualification.value=r.qualification||'';
+    if(window.setRecipientAddress)setRecipientAddress.value=r.address||'';
+    if(window.setRecipientEmail)setRecipientEmail.value=r.email||'';
+    if(window.setService)setService.value=r.serviceDescription||DEFAULT_SERVICE;
+    if(window.setSalutation)setSalutation.value=r.salutation||'';
+    if(window.setSignoffName)setSignoffName.value=r.signoffName||'';
+    const role=document.getElementById('setRecipientRole');if(role)role.value=r.roleLabel||DEFAULT_ROLE;
+  }
+  function saveRecipientFields(){
+    const r=activeRecipient();
+    if(!r)return;
+    if(window.setRecipientName)r.name=setRecipientName.value.trim();
+    if(window.setRecipientQualification)r.qualification=setRecipientQualification.value.trim();
+    if(window.setRecipientAddress)r.address=setRecipientAddress.value.trim();
+    if(window.setRecipientEmail)r.email=setRecipientEmail.value.trim();
+    if(window.setService)r.serviceDescription=setService.value.trim()||DEFAULT_SERVICE;
+    if(window.setSalutation)r.salutation=setSalutation.value.trim();
+    if(window.setSignoffName)r.signoffName=setSignoffName.value.trim();
+    const role=document.getElementById('setRecipientRole');if(role)r.roleLabel=role.value.trim()||DEFAULT_ROLE;
+    state.settings._updatedAt=new Date().toISOString();
+    applyRecipientToLegacy();
+    saveState(false);
+  }
+  function moveRecipientInvoiceFields(){
+    const recipientName=document.getElementById('setRecipientName');
+    if(!recipientName)return;
+    const card=recipientName.closest('.card');
+    const grid=recipientName.closest('.formgrid');
+    if(!card||!grid)return;
+    if(!document.getElementById('setRecipientRole')){
+      const tpl=document.getElementById('setService')?.closest('.field');
+      if(tpl){const f=tpl.cloneNode(true),inp=f.querySelector('input');inp.id='setRecipientRole';inp.value='';f.querySelectorAll('.v6113-field-help').forEach(x=>x.remove());tpl.parentNode.insertBefore(f,tpl)}
+    }
+    const defs=[
+      ['setRecipientRole','Rolle auf Honorarnote','z. B. Ordinationsinhaberin / Ordinationsinhaber','Überschrift über dem Empfänger auf der Honorarnote.'],
+      ['setService','Leistungsbezeichnung','z. B. Ärztliche Vertretungstätigkeit','Wird für diesen Rechnungsempfänger auf der Honorarnote verwendet.'],
+      ['setSalutation','Anrede auf Honorarnote','z. B. Sehr geehrte Frau Dr. …','Individuell pro Rechnungsempfänger.'],
+      ['setSignoffName','Name unter Grußformel','z. B. Dr. Raouf Mehrabi','Individuell pro Rechnungsempfänger.']
+    ];
+    for(const [id,label,placeholder,help] of defs){
+      const input=document.getElementById(id);if(!input)continue;
+      const field=input.closest('.field');if(!field)continue;
+      const lab=field.querySelector('label');if(lab)lab.textContent=label;
+      input.placeholder=placeholder;
+      let h=field.querySelector('.v6113-field-help');
+      if(!h){h=document.createElement('div');h.className='help v6113-field-help';field.appendChild(h)}
+      h.textContent=help;
+      grid.appendChild(field);
+    }
+    const menu=document.getElementById('v611SettingsMenu');
+    if(menu){
+      for(const row of menu.querySelectorAll('.v611-settings-row')){
+        const title=row.querySelector('strong')?.textContent.trim();
+        const small=row.querySelector('small');
+        if(title==='Abrechnung'&&small)small.textContent='Stundensatz, Rücklage und steuerliche Hinweise';
+        if(title==='Rechnungsempfänger'&&small)small.textContent='Empfänger, Anrede und Honorarnoten-Texte verwalten';
+      }
+    }
+  }
+
+  recipientList();
+  applyRecipientToLegacy();
+  moveRecipientInvoiceFields();
+  syncRecipientFields();
+
+  ['setRecipientName','setRecipientQualification','setRecipientAddress','setRecipientEmail','setService','setSalutation','setSignoffName','setRecipientRole'].forEach(id=>{
+    const el=document.getElementById(id);if(!el||el.dataset.v6113Bound)return;
+    el.dataset.v6113Bound='1';
+    el.addEventListener('change',()=>{saveRecipientFields();try{renderInvoice()}catch(_){}});
+  });
+  document.addEventListener('click',ev=>{
+    if(ev.target.closest('[data-v611-recipient],[data-v611-invoice-recipient],#v611AddRecipient')){
+      setTimeout(()=>{
+        recipientList();applyRecipientToLegacy();syncRecipientFields();
+        try{renderInvoice()}catch(_){ }
+      },0);
+    }
+  },false);
+
+  const baseLoadSettings=window.loadSettingsForm;
+  if(typeof baseLoadSettings==='function'){
+    window.loadSettingsForm=function(){
+      const out=baseLoadSettings.apply(this,arguments);
+      recipientList();moveRecipientInvoiceFields();syncRecipientFields();
+      return out;
+    };
+  }
+
+  window.renderInvoiceBase=function(){
+    applyRecipientToLegacy();
+    const y=invYear.value||String(state.settings.year),m=invMonth.value||'01',es=currentInvoiceEntries(),s=state.settings,total=es.reduce((a,e)=>a+gross(e),0),hrs=es.reduce((a,e)=>a+entryHours(e),0);
+    invoiceWarning.style.display=(!s.issuerQualification||!s.issuerAddress||!s.recipientAddress||!s.iban)?'block':'none';
+    invoiceWarning.textContent='Für das Vorlagen-Layout bitte Rechnungsdaten, Empfänger und IBAN vollständig hinterlegen.';
+    const recipientLines=(s.recipientAddress||'').split('\n').filter(Boolean),issuerLines=(s.issuerAddress||'').split('\n').filter(Boolean),service=s.serviceDescription||'ärztliche Vertretungstätigkeit';
+    invoicePreview.innerHTML=`<div class="hn-title">Honorarnote für ${escapeHtml(service)}</div><div class="hn-number">Honorarnote Nummer: ${escapeHtml(invNumber.value||defaultInvoiceNumber(y,m))}</div><div class="hn-date">Wien, ${dateAT(invDate.value)}</div><hr class="hn-rule"><div class="hn-section-title">${escapeHtml(s.roleLabel||DEFAULT_ROLE)}:</div><div class="hn-name">${escapeHtml(s.recipientName||'')}</div>${s.recipientQualification?`<div class="hn-qualification">${escapeHtml(s.recipientQualification)}</div>`:''}${recipientLines.map(line=>`<div class="hn-address-line">${escapeHtml(line)}</div>`).join('')}<div class="hn-block-gap"></div><div class="hn-section-title">Vertretender Arzt:</div><div class="hn-name">${escapeHtml(s.issuerName||'')}</div>${s.issuerQualification?`<div class="hn-qualification">${escapeHtml(s.issuerQualification)}</div>`:''}${issuerLines.map(line=>`<div class="hn-address-line">${escapeHtml(line)}</div>`).join('')}<div class="hn-iban">IBAN: ${escapeHtml(s.iban||'')}</div><hr class="hn-rule"><div class="hn-body"><p>${escapeHtml(s.salutation||'')}</p><p class="hn-intro">Anbei übermittle ich die monatliche Honorarnote für ${escapeHtml(service)}<br>für den Monat <strong>${MONTHS[Number(m)-1]} ${y}</strong>.</p><div class="hn-summary"><div>-</div><div>Leistungszeitraum:</div><div>${escapeHtml(modelPeriod(y,m))}</div><div>-</div><div>Gesamtstunden:</div><div>${escapeHtml(invoiceRateText(es,hrs))}</div><div class="spacer"></div><div>-</div><div>Gesamthonorar:</div><div>${escapeHtml(modelMoney(total))}</div></div><div class="hn-legal"><p>${escapeHtml(s.taxNote||'')}</p><p>${escapeHtml(s.paymentText||'')}</p></div><div class="hn-signoff"><div>Mit freundlichen Grüßen,</div><div>${escapeHtml(s.signoffName||'')}</div></div></div>`;
+  };
+
+  window.createInvoicePdfBlob=async function(){
+    applyRecipientToLegacy();
+    const es=currentInvoiceEntries();if(!es.length)throw new Error('NO_ENTRIES');
+    const s=state.settings,y=invYear.value,m=invMonth.value,num=invNumber.value||defaultInvoiceNumber(y,m),total=es.reduce((a,e)=>a+gross(e),0),hrs=es.reduce((a,e)=>a+entryHours(e),0),recipientLines=(s.recipientAddress||'').split('\n').filter(Boolean),issuerLines=(s.issuerAddress||'').split('\n').filter(Boolean);
+    if(!window.PDFLib||!window.fontkit)throw new Error('FONT_ENGINE_UNAVAILABLE');
+    const {PDFDocument,rgb}=PDFLib,pdf=await PDFDocument.create();pdf.registerFontkit(fontkit);
+    const base='https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/';
+    const [regBytes,boldBytes]=await Promise.all([fetch(base+'latin-400-normal.ttf').then(r=>{if(!r.ok)throw new Error('FONT_LOAD');return r.arrayBuffer()}),fetch(base+'latin-700-normal.ttf').then(r=>{if(!r.ok)throw new Error('FONT_LOAD');return r.arrayBuffer()})]);
+    const reg=await pdf.embedFont(regBytes,{subset:true}),bold=await pdf.embedFont(boldBytes,{subset:true}),page=pdf.addPage([595.28,841.89]),black=rgb(0,0,0);
+    const draw=(x,y,size,text,isBold=false)=>page.drawText(String(text??''),{x,y,size,font:isBold?bold:reg,color:black});
+    const right=(y,size,text,rightX=523,isBold=false)=>{const f=isBold?bold:reg;draw(rightX-f.widthOfTextAtSize(String(text),size),y,size,text,isBold)};
+    const line=(x1,y1,x2,y2,w=.6)=>page.drawLine({start:{x:x1,y:y1},end:{x:x2,y:y2},thickness:w,color:black});
+    const wrap=(text,size,maxWidth,isBold=false)=>{const f=isBold?bold:reg,words=String(text||'').trim().split(/\s+/).filter(Boolean),out=[];let cur='';for(const word of words){const t=cur?cur+' '+word:word;if(!cur||f.widthOfTextAtSize(t,size)<=maxWidth)cur=t;else{out.push(cur);cur=word}}if(cur)out.push(cur);return out};
+    const service=(s.serviceDescription||'ärztliche Vertretungstätigkeit').trim(),title=`Honorarnote für ${service}`,titleSize=Math.max(11.5,Math.min(16,16*(451/Math.max(451,bold.widthOfTextAtSize(title,16)))));draw((595.28-bold.widthOfTextAtSize(title,titleSize))/2,754,titleSize,title,true);
+    const ntext=`Honorarnote Nummer: ${num}`;draw((595.28-bold.widthOfTextAtSize(ntext,12))/2,728,12,ntext,true);right(705,12,`Wien, ${dateAT(invDate.value)}`,523,true);line(72,700,523,700,.6);
+    draw(72,678,14,`${s.roleLabel||DEFAULT_ROLE}:`,true);draw(72,653,12,s.recipientName||'',true);let yr=631;if(s.recipientQualification){draw(72,yr,11.7,s.recipientQualification);yr-=20}recipientLines.forEach(t=>{draw(72,yr,11.7,t);yr-=18});
+    draw(72,555,14,'Vertretender Arzt:',true);draw(72,531,12,s.issuerName||'',true);let yi=509;if(s.issuerQualification){draw(72,yi,11.7,s.issuerQualification);yi-=20}issuerLines.forEach(t=>{draw(72,yi,11.7,t);yi-=18});draw(72,460,12,`IBAN: ${s.iban||''}`,true);line(72,455,523,455,.6);
+    draw(72,411,11.7,s.salutation||'');const introLines=wrap(`Anbei übermittle ich die monatliche Honorarnote für ${service}`,11.7,451);introLines.slice(0,2).forEach((t,i)=>draw(72,388-(i*17),11.7,t));const monthY=371-(Math.max(0,Math.min(2,introLines.length)-1)*17);draw(72,monthY,11.7,'für den Monat ');const monthLabel=`${MONTHS[Number(m)-1]} ${y}`,monthX=72+reg.widthOfTextAtSize('für den Monat ',11.7);draw(monthX,monthY,11.7,monthLabel,true);draw(monthX+bold.widthOfTextAtSize(monthLabel,11.7),monthY,11.7,'.');
+    draw(90,324,11.7,'-');draw(108,324,11.7,'Leistungszeitraum:',true);draw(216,324,11.7,modelPeriod(y,m),true);draw(90,308,11.7,'-');draw(108,308,11.7,'Gesamtstunden:',true);draw(216,308,11.7,invoiceRateText(es,hrs),true);draw(90,276,11.7,'-');draw(108,276,11.7,'Gesamthonorar:',true);draw(216,276,11.7,modelMoney(total),true);
+    let yy=229;for(const t of wrap(s.taxNote||'',11.7,451)){draw(72,yy,11.7,t);yy-=17}yy-=7;for(const t of wrap(s.paymentText||'',11.7,451)){draw(72,yy,11.7,t);yy-=17}draw(72,118,11.7,'Mit freundlichen Grüßen,');draw(72,94,11.7,s.signoffName||'');
+    return new Blob([await pdf.save()],{type:'application/pdf'});
+  };
+
+  window.invoiceSnapshotV63=function(){
+    applyRecipientToLegacy();
+    const es=currentInvoiceEntries(),entries=es.map(e=>({id:e.id,date:e.date,start:e.start||'',end:e.end||'',breakMinutes:Number(e.breakMinutes||0),manualHours:e.manualHours===null?null:Number(e.manualHours),rateCents:Math.round(Number(e.rate||0)*100),grossCents:grossCentsV63(e),confirmedAt:e.confirmedAt||'',updatedAt:e.updatedAt||''})),s=state.settings,r=activeRecipient(),invoiceSettings={issuerName:s.issuerName||'',issuerQualification:s.issuerQualification||'',issuerAddress:s.issuerAddress||'',recipientId:r?.id||'',recipientName:s.recipientName||'',recipientQualification:s.recipientQualification||'',recipientAddress:s.recipientAddress||'',iban:s.iban||'',serviceDescription:r?.serviceDescription||s.serviceDescription||'',salutation:r?.salutation||s.salutation||'',signoffName:r?.signoffName||s.signoffName||'',taxNote:s.taxNote||'',paymentText:s.paymentText||'',invoiceNumber:invNumber.value||'',invoiceDate:invDate.value||''};
+    return{version:2,entries,totalCents:entries.reduce((sum,e)=>sum+(e.grossCents||0),0),hoursHundredths:Math.round(es.reduce((sum,e)=>sum+(entryHours(e)||0),0)*100),invoiceSettings};
+  };
+  window.invoiceSnapshotHashV63=function(){return JSON.stringify(invoiceSnapshotV63())};
+
+  window.shareSignedInvoice=async function(){
+    applyRecipientToLegacy();
+    const rec=invoiceRecord();if(!rec?.signedAt){alert('Bitte zuerst die signierte PDF übernehmen.');return}
+    const blob=await getInvoiceBlob(`signed:${rec.key}`);if(!blob){alert('Die signierte PDF ist auf diesem Gerät nicht mehr vorhanden.');return}
+    const r=activeRecipient(),to=r.email||'',subject=`Honorarnote ${MONTHS[Number(rec.month)-1]} ${rec.year} – Dr. Raouf Mehrabi`,body=`Guten Tag,\n\nanbei übermittle ich meine Honorarnote für ${r.serviceDescription||'ärztliche Vertretungstätigkeit'} im ${MONTHS[Number(rec.month)-1]} ${rec.year}.\n\nMit freundlichen Grüßen\n${r.signoffName||state.settings.issuerName||'Dr. Raouf Mehrabi'}`,file=new File([blob],rec.filename||invoiceFilename(),{type:'application/pdf'}),shortcut=(state.settings.invoiceMailShortcut||'').trim();
+    if(isIOSDevice()&&shortcut&&rec.signedDropboxPath&&isDropboxConnected()){try{const fileUrl=await dropboxTemporaryLink(rec.signedDropboxPath),payload={to,subject,body,fileUrl,fileName:file.name,invoiceKey:rec.key};upsertInvoiceRecord({key:rec.key,mailOpenedAt:nowISO()});renderInvoice();window.location.href=`shortcuts://run-shortcut?name=${encodeURIComponent(shortcut)}&input=text&text=${encodeURIComponent(JSON.stringify(payload))}`;return}catch(err){console.warn(err)}}
+    if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){try{await navigator.share({files:[file],title:subject,text:to?`Empfänger: ${to}\n\n${body}`:body});upsertInvoiceRecord({key:rec.key,mailOpenedAt:nowISO()});renderInvoice();return}catch(err){if(err?.name==='AbortError')return}}
+    await downloadBlob(blob,file.name);upsertInvoiceRecord({key:rec.key,mailOpenedAt:nowISO()});renderInvoice();window.location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body+'\n\nDie signierte PDF wurde auf das Gerät geladen und kann angehängt werden.')}`;
+  };
+  if(window.invoiceSendMail)invoiceSendMail.onclick=shareSignedInvoice;
+
+  const baseRenderInvoice=window.renderInvoice;
+  if(typeof baseRenderInvoice==='function'){
+    window.renderInvoice=function(){applyRecipientToLegacy();return baseRenderInvoice.apply(this,arguments)};
+  }
+
+  window.ordipilotRoleLabel=()=>activeRecipient()?.roleLabel||DEFAULT_ROLE;
+  // Nach jedem Cloud-Merge Empfängerfelder normalisieren (wird vom Sync-Kern aufgerufen).
+  (window.ordipilotSyncHooks=window.ordipilotSyncHooks||[]).push(()=>{recipientList();applyRecipientToLegacy();});
+
+  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,`Version ${VERSION}`)});
+  document.documentElement.dataset.ordipilotVersion=VERSION;
+  try{renderInvoice()}catch(_){ }
+  saveState(false);
+})();
+
+</script>
+<script id="v612-sync-core">
+/* ===== OrdiPilot V6.12 · Sync-Kern =====
+   Eine einzige Sync-Funktion. Regeln:
+   1. Kein Upload, wenn Dropbox nicht sauber gelesen werden konnte.
+   2. Upload nur gegen die gelesene Revision (Dropbox lehnt ab, wenn ein anderes Gerät zwischenzeitlich geschrieben hat).
+   3. Fehlt die Datendatei, wird sie nur nach ausdrücklicher Bestätigung neu angelegt – nie mit leerem Stand.
+   4. Leere Einstellungsfelder überschreiben nie gefüllte.
+   5. Kein Datensatz aus der Cloud geht verloren (außer durch eine bewusste Löschung).
+   6. Vor dem Schreiben wird der Cloud-Stand einmal täglich als backup_JJJJ-MM-TT.json gesichert.
+   Der Teil bis "Verdrahtung" ist rein funktional und wird von tests/ in Node geprüft. */
+(function(root){
+  'use strict';
+  const isBlank=v=>v===undefined||v===null||(typeof v==='string'&&v.trim()==='')||(Array.isArray(v)&&v.length===0);
+  const stamp=v=>{const t=new Date(v||0).getTime();return Number.isFinite(t)?t:0};
+
+  // Feldweises Zusammenführen: der neuere Stand gewinnt, aber nie mit einem leeren Wert gegen einen gefüllten.
+  function mergeFields(newer,older){
+    const out={...(older||{}),...(newer||{})};
+    for(const k of Object.keys(older||{})){
+      if(isBlank(out[k])&&!isBlank(older[k]))out[k]=older[k];
+    }
+    return out;
+  }
+  function mergeRecipients(newerArr,olderArr){
+    const newer=Array.isArray(newerArr)?newerArr:[],older=Array.isArray(olderArr)?olderArr:[];
+    const byId=new Map(older.filter(r=>r&&r.id).map(r=>[r.id,r]));
+    const out=newer.filter(Boolean).map(r=>mergeFields(r,byId.get(r.id)));
+    const seen=new Set(out.map(r=>r.id));
+    for(const r of older)if(r&&r.id&&!seen.has(r.id))out.push(r);
+    return out;
+  }
+  function mergeSettings(local,remote){
+    const l=local||{},r=remote||{},localNewer=stamp(l._updatedAt)>=stamp(r._updatedAt);
+    const newer=localNewer?l:r,older=localNewer?r:l;
+    const out=mergeFields(newer,older);
+    out.recipients=mergeRecipients(newer.recipients,older.recipients);
+    if(!out.recipients.length)delete out.recipients;
+    out._updatedAt=newer._updatedAt||older._updatedAt;
+    return out;
+  }
+
+  const counts=s=>({entries:(s?.entries||[]).length,parking:(s?.parkingRecords||[]).length,invoices:(s?.invoices||[]).length});
+  const isEmptyState=s=>{const c=counts(s);return c.entries+c.parking+c.invoices===0};
+
+  // Prüft, ob jeder Cloud-Datensatz im Ergebnis noch vorhanden ist – außer er wurde bewusst gelöscht (Grabstein).
+  function assertNothingLost(remote,merged){
+    if(!remote)return;
+    const check=(list,mergedList,deleted,key,label)=>{
+      const have=new Set((mergedList||[]).map(x=>x&&x[key]).filter(Boolean)),del=deleted||{};
+      // Honorarnoten: alter Schlüssel "2026-09" gilt als vorhanden, wenn er auf "2026-09::<Empfänger>" migriert wurde.
+      const present=k=>have.has(k)||(key==='key'&&!String(k).includes('::')&&[...have].some(h=>String(h).startsWith(k+'::')));
+      const missing=(list||[]).filter(x=>x&&x[key]&&!present(x[key])&&!del[x[key]]);
+      if(missing.length)throw new Error(`SYNC_GUARD_${label}:${missing.length}`);
+    };
+    check(remote.entries,merged.entries,merged.deletedEntries,'id','ENTRIES');
+    check(remote.parkingRecords,merged.parkingRecords,merged.deletedParking,'id','PARKING');
+    check(remote.invoices,merged.invoices,{},'key','INVOICES');
+    if(!isEmptyState(remote)&&isEmptyState(merged))throw new Error('SYNC_GUARD_EMPTY_MERGE');
+  }
+
+  const isConflict=err=>/conflict/i.test(String(err&&err.message||err));
+
+  /* deps: {
+       isConnected():bool, getState():state, setState(state), path():string,
+       readCloud(path) -> {data,rev} | null (nur bei "nicht gefunden"; jeder andere Fehler wirft),
+       writeCloud(path,data,{rev}|{create:true}) -> wirft bei Konflikt (Fehlertext enthält "conflict"),
+       merge(local,remote)->state, afterMerge(state) (Migrationen, EasyPark-Import), clone(x),
+       backup(remoteData) (darf fehlschlagen), confirmCreate(path)->bool, status(text,kind), persist(), refresh()
+     } */
+  function createSync(deps){
+    let inflight=null,lastStatus=null;
+    const baseStatus=deps.status;deps={...deps,status:(t,k)=>{lastStatus=[t,k];baseStatus(t,k)}};
+    async function attempt(opts){
+      const before=deps.clone(deps.getState()),path=deps.path();
+      let remote;
+      try{remote=await deps.readCloud(path)}
+      catch(err){deps.status('Synchronisierung abgebrochen – Dropbox nicht lesbar, nichts hochgeladen','warn');return {ok:false,reason:'read',error:err}}
+      if(remote&&(typeof remote.data!=='object'||!remote.data||!Array.isArray(remote.data.entries))){
+        deps.status('Synchronisierung abgebrochen – Cloud-Datei ungültig, nichts überschrieben','warn');return {ok:false,reason:'invalid'};
+      }
+      if(!remote){
+        if(isEmptyState(before)){deps.status('Keine Datendatei in Dropbox und keine Daten auf diesem Gerät – nichts zu tun','warn');return {ok:false,reason:'nothing'}}
+        if(!(await deps.confirmCreate(path,opts))){deps.status('Synchronisierung abgebrochen – Datendatei nicht gefunden','warn');return {ok:false,reason:'not_found'}}
+      }else{
+        try{await deps.backup(remote.data)}catch(e){/* Sicherung ist best effort, der Sync bleibt geschützt */}
+      }
+      try{
+        let merged=remote?deps.merge(deps.clone(before),deps.clone(remote.data)):deps.clone(before);
+        deps.setState(merged);
+        await deps.afterMerge(deps.getState(),remote&&remote.data);
+        assertNothingLost(remote&&remote.data,deps.getState());
+        await deps.writeCloud(path,deps.getState(),remote?{rev:remote.rev}:{create:true});
+      }catch(err){
+        if(isConflict(err))return {ok:false,reason:'conflict',error:err};
+        deps.setState(before);
+        deps.status('Synchronisierung gestoppt – Daten geschützt, nichts überschrieben','warn');
+        return {ok:false,reason:'guard',error:err};
+      }
+      deps.persist();
+      return {ok:true};
+    }
+    async function run(opts={}){
+      if(!deps.isConnected()){deps.status('Nicht verbunden');return false}
+      deps.status('Synchronisiere…','busy');
+      let res=await attempt(opts);
+      if(!res.ok&&res.reason==='conflict')res=await attempt(opts); // anderes Gerät hat zwischenzeitlich geschrieben: neu lesen, neu zusammenführen
+      if(!res.ok&&res.reason==='conflict'){deps.status('Synchronisierung abgebrochen – gleichzeitige Änderung auf anderem Gerät, bitte erneut versuchen','warn')}
+      try{deps.refresh(res)}catch(e){console.warn(e)}
+      if(res.ok)deps.status(`Synchronisiert · ${new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'})}`,'on');
+      else if(lastStatus)deps.status(lastStatus[0],lastStatus[1]); // Aktualisierung der Oberfläche überschreibt sonst die Fehlermeldung
+      if(!res.ok&&res.error)console.error('OrdiPilot-Sync:',res.reason,res.error);
+      return res.ok;
+    }
+    return function sync(opts){
+      if(inflight)return inflight;
+      inflight=run(opts).finally(()=>{inflight=null});
+      return inflight;
+    };
+  }
+
+  // Ausgefallene Rechnungsdaten aus dem jüngsten Backup ergänzen, in dem sie gefüllt sind (nur leere Felder).
+  const CRITICAL_KEYS=['issuerName','issuerQualification','issuerAddress','issuerEmail','issuerPhone','iban','bic','taxNumber','recipientName','recipientQualification','recipientAddress','recipientEmail','serviceDescription','salutation','signoffName','taxNote','paymentText'];
+  const settingsLookWiped=s=>!!s&&isBlank(s.issuerName)&&isBlank(s.iban);
+  const titleOnly=v=>/^\s*((dr|med|univ|prof|doz|mag|prim)\.?\s*)+$/i.test(String(v||''));
+  const activeRec=s=>Array.isArray(s?.recipients)&&s.recipients.length?(s.recipients.find(x=>x.id===s.activeRecipientId)||s.recipients[0]):null;
+  // Reparatur nötig, wenn Rechnungsdaten fehlen oder der Empfänger nur noch aus einem Titel besteht bzw. keine Adresse hat.
+  function settingsNeedRepair(s){
+    if(!s)return false;
+    if(settingsLookWiped(s))return true;
+    const r=activeRec(s);
+    return !!r&&(isBlank(r.name)||titleOnly(r.name)||isBlank(r.address));
+  }
+  const backupUsable=b=>!!b&&!settingsLookWiped(b)&&!isBlank(b.recipientName||activeRec(b)?.name)&&!titleOnly(b.recipientName||activeRec(b)?.name);
+  // Doppelte Honorarnoten (gleicher Schlüssel nach Migration) zusammenfassen – der jüngste Stand gewinnt.
+  function dedupeInvoices(list){
+    const ts=r=>stamp(r.updatedAt||r.mailOpenedAt||r.signedAt||r.createdAt),map=new Map(),out=[];
+    for(const r of list||[]){if(!r||!r.key){out.push(r);continue}const cur=map.get(r.key);if(!cur||ts(r)>=ts(cur))map.set(r.key,{...(cur||{}),...r})}
+    return [...out,...map.values()];
+  }
+  function repairSettingsFrom(settings,backup){
+    const s=settings,b=backup||{},filled=[];
+    for(const k of CRITICAL_KEYS)if(isBlank(s[k])&&!isBlank(b[k])){s[k]=b[k];filled.push(k)}
+    // Legacy-Empfängerfelder auf den aktiven Empfänger übertragen, sofern dort leer bzw. nur ein Titel steht.
+    if(Array.isArray(s.recipients)&&s.recipients.length){
+      const r=activeRec(s),src=activeRec(b)||{};
+      const map={name:'recipientName',qualification:'recipientQualification',address:'recipientAddress',email:'recipientEmail',serviceDescription:'serviceDescription',salutation:'salutation',signoffName:'signoffName'};
+      for(const [rk,bk] of Object.entries(map)){
+        const cur=String(r[rk]||'').trim(),val=!isBlank(src[rk])&&!(rk==='name'&&titleOnly(src[rk]))?src[rk]:b[bk];
+        if((isBlank(cur)||(rk==='name'&&titleOnly(cur)))&&!isBlank(val)&&!(rk==='name'&&titleOnly(val))){r[rk]=val;filled.push('recipient.'+rk)}
+      }
+    }
+    return filled;
+  }
+
+  root.OrdiPilotSyncCore={isBlank,mergeFields,mergeRecipients,mergeSettings,assertNothingLost,isEmptyState,createSync,settingsLookWiped,settingsNeedRepair,backupUsable,dedupeInvoices,repairSettingsFrom,CRITICAL_KEYS};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* ===== Verdrahtung mit der App ===== */
+(function(){
+  'use strict';
+  if(typeof document==='undefined'||typeof state==='undefined')return;
+  const C=window.OrdiPilotSyncCore;
+  const SYSTEM='/Ordination & Selbständigkeit/Vertretungsdienste/System';
+  const DATA=SYSTEM+'/daten.json';
+  const LAST_OK='ordipilot-last-sync-ok';
+
+  async function dbxMeta(path){
+    const token=await ensureAccessToken();
+    const r=await fetch('https://api.dropboxapi.com/2/files/get_metadata',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({path})});
+    if(r.status===409){const t=await r.text();if(/not_found/.test(t))return null;throw new Error(t)}
+    if(!r.ok)throw new Error(await r.text());
+    return r.json();
+  }
+  async function readCloud(path){
+    const meta=await dbxMeta(path);
+    if(!meta)return null;
+    const blob=await dbxDownload('rev:'+meta.rev); // exakt die geprüfte Revision lesen
+    if(!blob)throw new Error('Revision '+meta.rev+' nicht lesbar');
+    const data=JSON.parse(await blob.text());
+    return {data,rev:meta.rev};
+  }
+  async function writeCloud(path,data,how){
+    const token=await ensureAccessToken();
+    if(how.create)await ensureDropboxFolders(path);
+    const mode=how.create?'add':{'.tag':'update',update:how.rev};
+    const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/octet-stream','Dropbox-API-Arg':dbxArg({path,mode,autorename:false,mute:true,strict_conflict:true})},body:new Blob([JSON.stringify(cleanStateForCloud(data),null,2)],{type:'application/json'})});
+    if(!r.ok)throw new Error(await r.text());
+    return r.json();
+  }
+  async function backup(remoteData){
+    const day=todayISO(),key='vertretungsabrechnung-last-cloud-backup';
+    let last='';try{last=localStorage.getItem(key)||''}catch(e){}
+    if(last===day)return;
+    const token=await ensureAccessToken();
+    const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/octet-stream','Dropbox-API-Arg':dbxArg({path:`${SYSTEM}/backup_${day}.json`,mode:'add',autorename:false,mute:true})},body:new Blob([JSON.stringify(remoteData,null,2)],{type:'application/json'})});
+    if(r.ok||r.status===409){try{localStorage.setItem(key,day)}catch(e){}} // 409 = Sicherung von heute existiert bereits
+  }
+  async function listSystemBackups(){
+    const res=await dbxRpc('files/list_folder',{path:SYSTEM,recursive:false});
+    return (res.entries||[]).filter(e=>e['.tag']==='file'&&/^backup.*\.json$/i.test(e.name)).sort((a,b)=>String(b.server_modified).localeCompare(String(a.server_modified)));
+  }
+  let repairNote='';
+  async function repairWipedSettings(s){
+    if(!C.settingsNeedRepair(s))return;
+    try{
+      for(const f of await listSystemBackups()){
+        const blob=await dbxDownload(f.path_lower||f.path_display);if(!blob)continue;
+        let b;try{b=JSON.parse(await blob.text())}catch(e){continue}
+        if(!C.backupUsable(b?.settings))continue;
+        const filled=C.repairSettingsFrom(s,b.settings);
+        if(filled.length){s._updatedAt=new Date().toISOString();s._v612RepairedFrom=f.name;repairNote=`Rechnungsdaten aus ${f.name} wiederhergestellt`}
+        return;
+      }
+    }catch(e){console.warn('Wiederherstellung der Rechnungsdaten nicht möglich',e)}
+  }
+  function hooks(){return Array.isArray(window.ordipilotSyncHooks)?window.ordipilotSyncHooks:[]}
+
+  const sync=C.createSync({
+    isConnected:()=>isDropboxConnected(),
+    getState:()=>state,
+    setState:s=>{state=s},
+    path:()=>{const p=state.settings&&state.settings.dropboxSyncPath;return p&&p.startsWith('/Ordination & Selbständigkeit/')?p:DATA},
+    readCloud,writeCloud,backup,
+    clone:x=>JSON.parse(JSON.stringify(x)),
+    merge:(local,remote)=>{const settings=C.mergeSettings(local.settings,remote.settings);const out=mergeStates(local,remote);out.settings=settings;return normalizeState(out)},
+    afterMerge:async()=>{
+      for(const h of hooks()){try{h()}catch(e){console.warn('Sync-Hook',e)}}
+      await repairWipedSettings(state.settings);
+      for(const h of hooks()){try{h()}catch(e){}} // Empfänger nach Reparatur erneut normalisieren
+      state.invoices=C.dedupeInvoices(state.invoices);
+      await importEasyParkFromDropbox(false);reconcileParkingAssignments();
+    },
+    confirmCreate:async(p,opts)=>!!(opts&&opts.interactive)&&confirm(`Die Datendatei wurde in Dropbox nicht gefunden:\n${p}\n\nNur bestätigen, wenn du sie bewusst mit den Daten dieses Geräts neu anlegen willst. Im Zweifel abbrechen.`),
+    status:(t,k)=>{setDropboxStatus(repairNote&&k==='on'?`${t} · ${repairNote}`:t,k)},
+    persist:()=>{saveState(false);try{localStorage.setItem(LAST_OK,new Date().toISOString())}catch(e){}updateSyncReminder()},
+    refresh:()=>{try{loadSettingsForm()}catch(e){}try{if(typeof renderRecipientManager==='function')renderRecipientManager()}catch(e){}try{refreshAll(false)}catch(e){}}
+  });
+  window.ordipilotSync=sync;
+  window.syncWithDropbox=sync;
+  if(window.syncDropbox)syncDropbox.onclick=()=>sync({interactive:true});
+
+  // Hinweis, wenn länger nicht synchronisiert wurde – damit nichts nur auf dem iPhone liegt.
+  function updateSyncReminder(){
+    let el=document.getElementById('v612SyncReminder');
+    let last=null;try{last=localStorage.getItem(LAST_OK)}catch(e){}
+    const days=last?(Date.now()-new Date(last).getTime())/864e5:Infinity;
+    const show=isDropboxConnected()&&days>3;
+    if(!show){if(el)el.remove();return}
+    if(!el){
+      el=document.createElement('button');el.id='v612SyncReminder';el.type='button';
+      el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 8px);z-index:9999;border:0;border-radius:999px;padding:9px 16px;background:#ff9f0a;color:#1c1c1e;font:600 14px -apple-system,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18)';
+      el.onclick=()=>sync({interactive:true});
+      document.body.appendChild(el);
+    }
+    el.textContent=last?`Seit ${Math.floor(days)} Tagen nicht gesichert · Jetzt synchronisieren`:'Noch nie mit Dropbox gesichert · Jetzt synchronisieren';
+  }
+  window.ordipilotUpdateSyncReminder=updateSyncReminder;
+  setTimeout(updateSyncReminder,1500);
+})();
+
+</script>
 </body></html>

@@ -1,0 +1,7 @@
+# Persönliche Daten gehören nach Dropbox, nie ins (öffentliche) Repo
+easypark.json
+daten.json
+backup*.json
+*.json.bak
+!manifest.webmanifest
+node_modules/

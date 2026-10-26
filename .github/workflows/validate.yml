@@ -1,0 +1,32 @@
+name: Validate OrdiPilot release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Update-Pfad-Test braucht den Stand 6.11.3 (fa3bdf5)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit- und Release-Tests (Sync-Kern, Struktur, Datenschutz)
+        run: node --test tests/*.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Browser installieren
+        run: |
+          pip install playwright==1.*
+          python -m playwright install --with-deps chromium
+      - name: Browser-Test der ganzen App mit simulierter Dropbox
+        run: python tests/browser_smoke.py
