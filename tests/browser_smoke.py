@@ -4,12 +4,15 @@ Start:  python3 tests/browser_smoke.py
 Optional mit echten Daten (bleiben lokal, werden nie committet):
         REAL_DATA=/pfad/daten.json REAL_BACKUP=/pfad/backup.json python3 tests/browser_smoke.py
 """
-import json, os, shutil, subprocess, sys, tempfile, threading, time, http.server, functools, datetime
+import json, os, re, shutil, subprocess, sys, tempfile, threading, time, http.server, functools, datetime
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM = "/Ordination & Selbständigkeit/Vertretungsdienste/System"
 DATA = SYSTEM + "/daten.json"
+_m = re.search(r"ordipilot-v(\d+)-(\d+)-(\d+)", open(os.path.join(ROOT, "service-worker.js")).read())
+VERSION, CACHE_NAME = ".".join(_m.groups()), _m.group(0)
+VERSION_RE = VERSION.replace(".", "\\.")
 
 
 def fixture():
@@ -167,7 +170,7 @@ def main():
         check("Empfänger-Adresse repariert", r0.get("address") == backup["settings"].get("recipientAddress"))
         check(f"Tagessicherung backup_{today}.json angelegt", dbx.get(f"{SYSTEM}/backup_{today}.json") is not None)
         check("Sicherung enthält den Cloud-Stand vor dem Schreiben", (dbx.get(f"{SYSTEM}/backup_{today}.json") or {}).get("settings", {}).get("iban", "") == cloud["settings"].get("iban", ""))
-        check("Version 6.12.0 sichtbar", page.evaluate("()=>[...document.querySelectorAll('.footer-note')].some(e=>/6\\.12\\.0/.test(e.textContent))"))
+        check(f"Version {VERSION} sichtbar", page.evaluate("()=>[...document.querySelectorAll('.footer-note')].some(e=>/"+VERSION_RE+"/.test(e.textContent))"))
         check("Kein Hotfix-Skript eingeschleust", page.evaluate("()=>!document.querySelector('script[src*=v6113]')"))
         check("Keine JavaScript-Fehler", not errors, "; ".join(errors)[:300])
         uploads_before = len(dbx.uploads)
@@ -208,11 +211,31 @@ def main():
         check("Nach Bestätigung angelegt (Modus add)", ok is True and dbx.get(DATA) is not None and dbx.uploads[-1][1] == "add")
         ctx.close()
 
-        print("4) Update-Pfad vom alten Service Worker (6.11.3) auf 6.12")
+        print("5) Automatisches Synchronisieren")
+        dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
+        local = json.loads(json.dumps(cloud)); local["settings"]["dropboxAutoSync"] = False; local["settings"].pop("_v613AutoSyncDefault", None)
+        local["entries"].append({"id": "auto1", "date": "2026-10-26", "start": "08:00", "end": "12:00", "breakMinutes": 0, "manualHours": None, "rate": 170, "updatedAt": "2026-10-26T12:00:00Z"})
+        ctx, page, errors = new_page(browser, base, dbx, local)
+        page.wait_for_timeout(3500)
+        check("Bestehende Installation: Auto-Sync einmalig eingeschaltet", page.evaluate("()=>state.settings.dropboxAutoSync===true&&state.settings._v613AutoSyncDefault===true"))
+        check("Beim Start automatisch synchronisiert (neuer Einsatz in Dropbox)", any(e["id"] == "auto1" for e in (dbx.get(DATA) or {}).get("entries", [])))
+        n = len(dbx.uploads)
+        page.evaluate("()=>{state.entries.push({id:'auto2',date:'2026-10-27',start:'08:00',end:'12:00',breakMinutes:0,manualHours:null,rate:170,updatedAt:new Date().toISOString()});saveState()}")
+        page.wait_for_timeout(3500)
+        check("Nach einer Änderung automatisch gesichert", any(e["id"] == "auto2" for e in dbx.get(DATA)["entries"]) and len(dbx.uploads) > n)
+        page.evaluate("()=>{state.settings.dropboxAutoSync=false;state.settings._updatedAt=new Date().toISOString();saveState(false)}")
+        page.reload(); page.wait_for_function("()=>!!window.ordipilotSync"); page.wait_for_timeout(2000)
+        check("Bewusst abgeschaltet bleibt abgeschaltet", page.evaluate("()=>state.settings.dropboxAutoSync===false"))
+        check("Keine JavaScript-Fehler (Auto-Sync)", not errors, "; ".join(errors)[:300])
+        ctx.close()
+
+        print("4) Update-Pfad vom alten Service Worker (6.11.3) auf die aktuelle Version")
         tmp = tempfile.mkdtemp()
         old = os.path.join(tmp, "app"); os.makedirs(old)
-        if subprocess.run(["git", "-C", ROOT, "archive", "fa3bdf5", "-o", os.path.join(tmp, "old.tar")]).returncode != 0:
-            print("  (übersprungen: Commit fa3bdf5 nicht im Checkout)"); browser.close(); srv.shutdown(); return finish()
+        # Stand 6.11.3 = letzter Commit vor V6.12 (Hash hat sich durch die Historien-Bereinigung geändert)
+        old_rev = subprocess.run(["git", "-C", ROOT, "log", "--all", "-1", "--format=%H", "--grep=Fix legacy path assertion in release validator"], capture_output=True, text=True).stdout.strip()
+        if not old_rev or subprocess.run(["git", "-C", ROOT, "archive", old_rev, "-o", os.path.join(tmp, "old.tar")]).returncode != 0:
+            print("  (übersprungen: Stand 6.11.3 nicht im Checkout)"); browser.close(); srv.shutdown(); return finish()
         subprocess.run(["tar", "-xf", os.path.join(tmp, "old.tar"), "-C", old], check=True)
         srv2 = serve(old); base2 = f"http://127.0.0.1:{srv2.server_address[1]}"
         dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
@@ -228,8 +251,8 @@ def main():
         page.wait_for_function("()=>navigator.serviceWorker.getRegistration().then(r=>!!r&&!!r.active&&r.active.scriptURL.includes('service-worker'))")
         page.reload(); page.wait_for_function("()=>!!window.ordipilotSync")
         cache = page.evaluate("()=>caches.keys()")
-        check("Neuer Worker aktiv, alter Cache gelöscht", cache == ["ordipilot-v6-12-0"], str(cache))
-        check("Danach Version 6.12.0", page.evaluate("()=>[...document.querySelectorAll('.footer-note')].some(e=>/6\\.12\\.0/.test(e.textContent))"))
+        check("Neuer Worker aktiv, alter Cache gelöscht", cache == [CACHE_NAME], str(cache))
+        check(f"Danach Version {VERSION}", page.evaluate("()=>[...document.querySelectorAll('.footer-note')].some(e=>/"+VERSION_RE+"/.test(e.textContent))"))
         check("Keine JavaScript-Fehler im Update-Pfad", not errors, "; ".join(errors)[:300])
         ctx.close(); srv2.shutdown()
         browser.close()

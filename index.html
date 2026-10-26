@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=6120">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6120">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6120">
+<link rel="manifest" href="manifest.webmanifest?v=6130">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6130">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6130">
 <title>OrdiPilot</title>
 <style>
 @font-face{font-family:"Carlito";font-style:normal;font-weight:400;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-400-normal.woff2") format("woff2")}
@@ -352,7 +352,7 @@ body{background:linear-gradient(180deg,#f7fbff 0,#f4f8fe 225px,#f5f6f9 680px,#f3
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 <script>
 const DROPBOX_APP_KEY="nn8s58mxbb5sbp5";
-const INITIAL_STATE = {"entries":[],"settings":{"defaultRate":170,"reservePct":50,"year":2026,"morningStart":"08:00","morningEnd":"13:00","afternoonStart":"13:00","afternoonEnd":"18:00","fullDayStart":"08:00","fullDayEnd":"17:00","issuerName":"","issuerQualification":"","issuerAddress":"","issuerEmail":"","issuerPhone":"","iban":"","bic":"","taxNumber":"","recipientName":"","recipientQualification":"","recipientAddress":"","serviceDescription":"Ärztliche Vertretungstätigkeit","paymentText":"Ich erkläre, für die steuerliche und sozialversicherungsrechtliche Erfassung des Betrages der o.a. Leistung selbst zu sorgen.","taxNote":"Der Betrag ist umsatzsteuerfrei gem. § 6 Abs 1 Z 19 UStG.","dropboxAppKey":"nn8s58mxbb5sbp5","dropboxSyncPath":"/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json","dropboxAutoSync":false,"_updatedAt":"2026-09-10T21:45:00.000Z","salutation":"","signoffName":"","easyParkImportPath":"/Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json","iosShortcutName":"Vertretung Familienkalender","calendarEventTitle":"Vertretung Dr. Vakil-Adli","calendarEventLocation":"Stockerauer Str. 5/6, 2100 Korneuburg","calendarTargetName":"Vertretung Ordination","calendarGroupName":"Familienkalender","calendarAutoSync":true,"calendarAutoDelete":true,"calendarButtonEnabled":true,"recipientEmail":"","invoiceMailShortcut":"Honorarnote senden","invoiceDropboxBase":"/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten"},"parkingRecords":[],"invoices":[]};
+const INITIAL_STATE = {"entries":[],"settings":{"defaultRate":170,"reservePct":50,"year":2026,"morningStart":"08:00","morningEnd":"13:00","afternoonStart":"13:00","afternoonEnd":"18:00","fullDayStart":"08:00","fullDayEnd":"17:00","issuerName":"","issuerQualification":"","issuerAddress":"","issuerEmail":"","issuerPhone":"","iban":"","bic":"","taxNumber":"","recipientName":"","recipientQualification":"","recipientAddress":"","serviceDescription":"Ärztliche Vertretungstätigkeit","paymentText":"Ich erkläre, für die steuerliche und sozialversicherungsrechtliche Erfassung des Betrages der o.a. Leistung selbst zu sorgen.","taxNote":"Der Betrag ist umsatzsteuerfrei gem. § 6 Abs 1 Z 19 UStG.","dropboxAppKey":"nn8s58mxbb5sbp5","dropboxSyncPath":"/Ordination & Selbständigkeit/Vertretungsdienste/System/daten.json","dropboxAutoSync":true,"_updatedAt":"2026-09-10T21:45:00.000Z","salutation":"","signoffName":"","easyParkImportPath":"/Ordination & Selbständigkeit/Vertretungsdienste/System/Import/easypark.json","iosShortcutName":"Vertretung Familienkalender","calendarEventTitle":"Vertretung Dr. Vakil-Adli","calendarEventLocation":"Stockerauer Str. 5/6, 2100 Korneuburg","calendarTargetName":"Vertretung Ordination","calendarGroupName":"Familienkalender","calendarAutoSync":true,"calendarAutoDelete":true,"calendarButtonEnabled":true,"recipientEmail":"","invoiceMailShortcut":"Honorarnote senden","invoiceDropboxBase":"/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten"},"parkingRecords":[],"invoices":[]};
 const MONTHS=["Jänner","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const KEY="vertretungsabrechnung-v3", OLD_KEYS=["vertretungsabrechnung-v2","vertretungsabrechnung-v1"], AUTH_KEY="vertretungsabrechnung-dropbox-auth";
 let state=loadState(),editingId=null,editingParkingId=null,pendingReceiptFile=null,syncTimer=null,entryDialogMode="plan",calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=todayISO(),entryPlannerCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),parkingFocusUnassigned=false;
@@ -575,7 +575,7 @@ function setDropboxStatus(text,type="off"){if(window.dropboxStatus)dropboxStatus
 async function maybeCloudBackupV63(){if(!isDropboxConnected())return;const day=todayISO(),last=localStorage.getItem("vertretungsabrechnung-last-cloud-backup");if(last===day)return;try{const path=`/Ordination & Selbständigkeit/Vertretungsdienste/System/backup_${day}.json`,blob=new Blob([JSON.stringify(cleanStateForCloud(state),null,2)],{type:"application/json"});await dbxUpload(path,blob);localStorage.setItem("vertretungsabrechnung-last-cloud-backup",day)}catch(e){console.warn("Cloud-Backup fehlgeschlagen",e)}}
 async function syncWithDropbox(opts){/* V6.12: Logik im Sync-Kern (#v612-sync-core) */return window.ordipilotSync?window.ordipilotSync(opts):false}
 function v63OnlineStatus(){if(!navigator.onLine){if(window.globalSyncStatus){globalSyncStatus.textContent="Offline · Änderungen lokal gespeichert";globalSyncStatus.className="sub v63-sync-warn"}}else if(!isDropboxConnected()){setDropboxStatus("Lokal gespeichert · Dropbox nicht verbunden","off")}}
-function init(){setupSelectors();dashYear.value=String(state.settings.year||2026);entryYear.value=String(state.settings.year||2026);parkingYear.value=String(state.settings.year||2026);invYear.value=String(state.settings.year||2026);invDate.value=todayISO();invMonth.value=String(new Date().getMonth()+1).padStart(2,"0");const rec=invoiceRecord(invYear.value,invMonth.value);invNumber.value=rec?.number||defaultInvoiceNumber(invYear.value,invMonth.value);loadSettingsForm();refreshAll(false);if(window.invoiceUnlockCorrection)invoiceUnlockCorrection.onclick=unlockInvoiceCorrectionV63;window.addEventListener("online",v63OnlineStatus);window.addEventListener("offline",v63OnlineStatus);v63OnlineStatus();if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("service-worker.js").catch(console.warn);handleDropboxCallback().then(()=>{if(state.settings.dropboxAutoSync&&isDropboxConnected()&&!new URLSearchParams(location.search).get("code"))setTimeout(()=>syncWithDropbox(),600)})}
+function init(){setupSelectors();dashYear.value=String(state.settings.year||2026);entryYear.value=String(state.settings.year||2026);parkingYear.value=String(state.settings.year||2026);invYear.value=String(state.settings.year||2026);invDate.value=todayISO();invMonth.value=String(new Date().getMonth()+1).padStart(2,"0");const rec=invoiceRecord(invYear.value,invMonth.value);invNumber.value=rec?.number||defaultInvoiceNumber(invYear.value,invMonth.value);loadSettingsForm();refreshAll(false);if(window.invoiceUnlockCorrection)invoiceUnlockCorrection.onclick=unlockInvoiceCorrectionV63;window.addEventListener("online",v63OnlineStatus);window.addEventListener("offline",v63OnlineStatus);v63OnlineStatus();if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("service-worker.js").catch(console.warn);handleDropboxCallback().then(()=>{/* V6.13: Start-Sync übernimmt der Sync-Kern (gedrosselt) */void 0})}
 
 function setupSettingsAccordions(){document.querySelectorAll(".settings-grid>.card").forEach(card=>{if(card.dataset.accordionReady)return;const h=card.querySelector(":scope>h3");if(!h)return;card.dataset.accordionReady="1";const body=document.createElement("div");body.className="settings-accordion-body";while(h.nextSibling)body.appendChild(h.nextSibling);const head=document.createElement("button");head.type="button";head.className="settings-accordion-head";head.innerHTML=`<span>${escapeHtml(h.textContent)}</span><span class="chev">›</span>`;h.replaceWith(head);body.hidden=true;card.appendChild(body);head.onclick=()=>{const open=!card.classList.contains("settings-open");card.classList.toggle("settings-open",open);body.hidden=!open}})}setupSettingsAccordions();if(window.entryCloseTop)entryCloseTop.onclick=()=>entryDialog.close();if(window.parkingCloseTop)parkingCloseTop.onclick=()=>parkingDialog.close();if(window.timePresetBar)timePresetBar.querySelectorAll("[data-time-preset]").forEach(b=>b.onclick=()=>applyTimePreset(b.dataset.timePreset));[fStart,fEnd].forEach(el=>el.addEventListener("change",()=>{updateTimePresetActive();updateCalc()}));if(window.parkingCalPrev)parkingCalPrev.onclick=()=>{parkingPlannerCursor=new Date(parkingPlannerCursor.getFullYear(),parkingPlannerCursor.getMonth()-1,1);renderParkingCalendar()};if(window.parkingCalNext)parkingCalNext.onclick=()=>{parkingPlannerCursor=new Date(parkingPlannerCursor.getFullYear(),parkingPlannerCursor.getMonth()+1,1);renderParkingCalendar()};if(window.parkingCalToday)parkingCalToday.onclick=()=>{pDate.value=todayISO();setParkingPlannerCursor(pDate.value);fillParkingEntryOptions(pEntryId.value,pDate.value);renderParkingCalendar()};if(window.detectParkingLocation)detectParkingLocation.onclick=detectParkingPosition;[dashYear,entryYear,entryMonth,parkingYear,parkingMonth,parkingProviderFilter].forEach(x=>x.addEventListener("change",()=>{renderDashboard();renderEntries();renderParking()}));entrySearch.addEventListener("input",renderEntries);makePdf.onclick=downloadInvoicePdf;quickPdf.onclick=()=>{switchTab("invoice");setTimeout(renderInvoice,0)};addEntry.onclick=()=>openEntry(null,"plan",todayISO());addParking.onclick=()=>openParking();if(window.v6ShowEntries)v6ShowEntries.onclick=()=>switchTab("entries");entryCalPrev.onclick=()=>{entryPlannerCursor=new Date(entryPlannerCursor.getFullYear(),entryPlannerCursor.getMonth()-1,1);renderEntryPlannerCalendar()};entryCalNext.onclick=()=>{entryPlannerCursor=new Date(entryPlannerCursor.getFullYear(),entryPlannerCursor.getMonth()+1,1);renderEntryPlannerCalendar()};entryCalToday.onclick=()=>{fDate.value=todayISO();selectedCalendarDate=fDate.value;setEntryPlannerCursor(fDate.value);updateEntryDateUI();renderEntryPlannerCalendar()};invoiceStartSign.onclick=startInvoiceSignature;invoiceDownloadDraft.onclick=async()=>{const rec=invoiceRecord(),blob=rec?await getInvoiceBlob(`draft:${rec.key}`):null;if(blob)await downloadBlob(blob,rec.filename||invoiceFilename(false));else alert("Bitte Honorarnote zuerst erstellen.")};invoiceSignedFile.onchange=async ev=>{const f=ev.target.files?.[0];if(f)await acceptSignedInvoice(f);ev.target.value=""};invoiceArchiveSigned.onclick=archiveSignedInvoice;invoiceSendMail.onclick=shareSignedInvoice;
 function refreshAll(rebuildSelectors=true){if(rebuildSelectors)setupSelectors();renderDashboard();renderEntries();renderParking();renderInvoice()}init();
@@ -1167,7 +1167,7 @@ setupV67();
 
   // UI copy and version.
   const help=document.querySelector('#panel-entries .v6-page-sub');if(help)help.textContent='Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
-  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.12.0')});
+  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.13.0')});
   applyRecipientToLegacy(state.settings.activeRecipientId,false);if(window.setRecipientName){setRecipientName.value=state.settings.recipientName||'';setRecipientQualification.value=state.settings.recipientQualification||'';setRecipientAddress.value=state.settings.recipientAddress||'';setRecipientEmail.value=state.settings.recipientEmail||''}
   invNumber.value=invoiceRecord()?.number||defaultInvoiceNumber(invYear.value,invMonth.value);
   renderRecipientManager();renderEntries();renderParking();renderInvoice();saveState(false);
@@ -1180,7 +1180,7 @@ setupV67();
 /* OrdiPilot V6.12 · Empfängerspezifische Honorarnoten-Texte (vormals v6113-hotfix.js, jetzt fest eingebaut). */
 (function(){
   'use strict';
-  const VERSION='6.12.0';
+  const VERSION='6.13.0';
   const DEFAULT_ROLE='Ordinationsinhaberin';
   const DEFAULT_SERVICE='Ärztliche Vertretungstätigkeit';
 
@@ -1624,6 +1624,25 @@ setupV67();
   window.ordipilotSync=sync;
   window.syncWithDropbox=sync;
   if(window.syncDropbox)syncDropbox.onclick=()=>sync({interactive:true});
+
+  // V6.13: Automatisches Synchronisieren ist Standard (seit V6.12 abgesichert).
+  // Einmalig für bestehende Installationen einschalten; wer es danach bewusst abschaltet, bleibt dabei.
+  if(!state.settings._v613AutoSyncDefault){
+    state.settings._v613AutoSyncDefault=true;state.settings.dropboxAutoSync=true;state.settings._updatedAt=new Date().toISOString();
+    saveState(false);try{if(window.setDropboxAuto)setDropboxAuto.checked=true}catch(e){}
+  }
+  let lastAutoSync=0;
+  function autoSyncSoon(reason){
+    if(!state.settings.dropboxAutoSync||!isDropboxConnected())return;
+    if(Date.now()-lastAutoSync<60000)return; // höchstens einmal pro Minute
+    lastAutoSync=Date.now();
+    sync().catch(e=>console.warn('Auto-Sync ('+reason+')',e));
+  }
+  window.ordipilotAutoSyncSoon=autoSyncSoon;
+  // Beim Start, beim Zurückkehren in die App und wenn wieder Netz da ist.
+  setTimeout(()=>{if(!new URLSearchParams(location.search).get('code'))autoSyncSoon('start')},1200);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')autoSyncSoon('vordergrund')});
+  window.addEventListener('online',()=>autoSyncSoon('online'));
 
   // Hinweis, wenn länger nicht synchronisiert wurde – damit nichts nur auf dem iPhone liegt.
   function updateSyncReminder(){

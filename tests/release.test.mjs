@@ -9,6 +9,8 @@ const html = read('index.html');
 const sw = read('service-worker.js');
 const manifest = JSON.parse(read('manifest.webmanifest'));
 const ROOT = '/Ordination & Selbständigkeit/Vertretungsdienste';
+const [, MA, MI, PA] = sw.match(/ordipilot-v(\d+)-(\d+)-(\d+)/);
+const VERSION = `${MA}.${MI}.${PA}`;
 
 test('Alle Inline-Skripte und der Service Worker sind gültiges JavaScript', () => {
   for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) if (!/src=/.test(m[1])) new vm.Script(m[2]);
@@ -42,9 +44,10 @@ test('Kanonische Dropbox-Pfade und stabiler Speicher-Schlüssel', () => {
 
 test('Versionen konsistent, PWA-ID unverändert (sonst startet iOS mit leerem Speicher)', () => {
   assert.equal(manifest.id, './ordipilot-v6110');
-  assert.match(manifest.start_url, /v=6120/);
-  assert.match(sw, /ordipilot-v6-12-0/);
-  assert.match(html, /Version 6\.12\.0/);
+  assert.ok(manifest.start_url.includes(`v=${MA}${MI}${PA}`), 'start_url passt nicht zur Version');
+  assert.ok(html.includes(`Version ${VERSION}`), 'Versionsanzeige passt nicht');
+  assert.ok(html.includes(`const VERSION='${VERSION}'`));
+  assert.equal([...html.matchAll(/\?v=(\d+)"/g)].filter((m) => m[1] !== `${MA}${MI}${PA}`).length, 0, 'veraltete ?v= Parameter');
 });
 
 test('Keine persönlichen Daten im Repository', () => {
