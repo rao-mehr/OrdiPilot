@@ -354,6 +354,35 @@ def main():
         check("Keine JavaScript-Fehler (Steuer)", not errors, "; ".join(errors)[:300])
         ctx.close()
 
+        print("7) Übersicht Einsätze und Parken")
+        dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
+        local = json.loads(json.dumps(cloud))
+        local["entries"].append({"id": "plan1", "date": "2099-01-05", "plannedStart": "09:00", "plannedEnd": "13:00", "start": "", "end": "", "planningOnly": True, "breakMinutes": 0, "manualHours": None, "rate": 170, "updatedAt": "2026-10-01T00:00:00Z"})
+        local["entries"].append({"id": "conf1", "date": "2026-10-01", "plannedStart": "09:00", "plannedEnd": "13:00", "start": "", "end": "", "planningOnly": True, "breakMinutes": 0, "manualHours": None, "rate": 170, "updatedAt": "2026-10-01T00:00:00Z"})
+        local["parkingRecords"].append({"id": "pfree", "date": "2026-09-14", "start": "08:00", "end": "09:00", "amount": 0, "provider": "EasyPark", "entryId": "e4", "updatedAt": "2026-09-01T10:00:00Z"})
+        local["parkingRecords"].append({"id": "porphan", "date": "2026-06-22", "start": "15:53", "end": "16:53", "amount": 2.55, "provider": "EasyPark", "entryId": "", "updatedAt": "2026-09-01T10:00:00Z"})
+        ctx, page, errors = new_page(browser, base, dbx, local)
+        page.evaluate("()=>{document.querySelector('[data-tab=entries]').click();entryYear.value='';renderEntries()}")
+        vs = page.evaluate("()=>[...document.querySelectorAll('#entryCards .v611-entry-card')].map(c=>c.dataset.vs+':'+c.dataset.entryId)")
+        check("Jeder Einsatz hat einen Status", len(vs) >= len(local["entries"]) - 1 and all(v.split(':')[0] in ("open","today","planned","done","billed") for v in vs), str(vs[:4]))
+        check("Geplant und zu bestätigen unterscheiden sich", "planned:plan1" in vs and "open:conf1" in vs, str([v for v in vs if 'plan1' in v or 'conf1' in v]))
+        page.evaluate("()=>document.querySelector('#v615Filter [data-f=open]').click()")
+        shown = page.evaluate("()=>[...document.querySelectorAll('#entryCards .v611-entry-card:not(.v615-hidden)')].map(c=>c.dataset.entryId)")
+        check("Filter „bestätigen“ zeigt nur diese Einsätze", shown == ["conf1"], str(shown))
+        page.evaluate("()=>document.querySelector('#v615Filter [data-f=all]').click()")
+        page.evaluate("()=>{document.querySelector('[data-tab=parking]').click();parkingYear.value='2026';renderParking()}")
+        days = page.evaluate("()=>[...document.querySelectorAll('#parkingCards .v615-day')].length")
+        cards = page.evaluate("()=>document.querySelectorAll('#parkingCards .v611-park-card').length")
+        check("Parkvorgänge nach Tagen gebündelt, keiner verloren", days > 0 and cards == len([p for p in local["parkingRecords"] if p["date"].startswith("2026")]), f"{days} Tage, {cards} Karten")
+        check("Gratis-Parken als „gratis“ markiert", page.evaluate("()=>[...document.querySelectorAll('.v615-free')].length") >= 1)
+        check("Parkvorgang ohne Einsatz: Einsatz anlegen möglich", page.locator("[data-v615-newentry='2026-06-22']").count() == 1)
+        check("Einsätze ohne Parkbeleg werden gelistet", page.locator("#v615NoPark").count() == 1)
+        page.evaluate("()=>{document.querySelector('[data-tab=invoice]').click();ordipilotTax.setYear(2026)}")
+        trep = page.evaluate("()=>ordipilotTax.report()")
+        check("Steuer: Parkvorgang ohne Einsatz wird nicht abgezogen", any(p["id"] == "porphan" for p in trep["parkingUnassigned"]) and not any(p["id"] == "porphan" for p in trep["parking"]))
+        check("Keine JavaScript-Fehler (Übersicht)", not errors, "; ".join(errors)[:300])
+        ctx.close()
+
         print("4) Update-Pfad vom alten Service Worker (6.11.3) auf die aktuelle Version")
         tmp = tempfile.mkdtemp()
         old = os.path.join(tmp, "app"); os.makedirs(old)
@@ -392,4 +421,13 @@ def finish():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        import traceback
+        tb = traceback.format_exc()
+        print(tb)
+        if os.environ.get("GITHUB_ACTIONS"):
+            last = [l.strip() for l in tb.strip().splitlines() if l.strip()][-6:]
+            print("::error title=Browser-Test abgebrochen::" + " | ".join(last).replace("\n", " ")[:900])
+        sys.exit(1)

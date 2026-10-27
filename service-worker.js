@@ -1,7 +1,7 @@
-/* OrdiPilot Service Worker · V6.14
+/* OrdiPilot Service Worker · V6.15
    Seit V6.12 enthält index.html alle Korrekturen selbst. Der Service Worker verändert
    die Seite nicht mehr (früher wurde v6113-hotfix.js zur Laufzeit eingeschleust). */
-const CACHE="ordipilot-v6-14-0";
+const CACHE="ordipilot-v6-15-0";
 const STATIC=[
   "./index.html",
   "./manifest.webmanifest",

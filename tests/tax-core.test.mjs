@@ -76,9 +76,10 @@ test('Ohne Entfernung: Fahrt unbekannt, Empfänger als fehlend gemeldet', () => 
 });
 
 test('Parkkosten nur im Jahr, ausgeschlossene nicht', () => {
-  const parking = [{ id: 1, date: '2026-09-03', amount: 4.14 }, { id: 2, date: '2026-09-04', amount: 3.1, excluded: true }, { id: 3, date: '2025-12-01', amount: 9 }];
+  const parking = [{ id: 1, date: '2026-09-03', amount: 4.14, entryId: 'a' }, { id: 2, date: '2026-09-04', amount: 3.1, excluded: true, entryId: 'a' }, { id: 3, date: '2025-12-01', amount: 9, entryId: 'a' }, { id: 4, date: '2026-06-22', amount: 2.55 }];
   const r = T.yearReport(base({ parking }));
   assert.equal(r.totals.parking, 4.14);
+  assert.equal(r.parkingUnassigned.length, 1, 'Parkvorgang ohne Einsatz wird nicht abgezogen');
   assert.equal(r.totals.surplus, -(4.14 + r.totals.trips));
 });
 
