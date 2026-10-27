@@ -8,9 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=6150">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6150">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v611-180.png?v=6150">
+<link rel="manifest" href="manifest.webmanifest?v=6160">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v616-180.png?v=6160">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/ordipilot-v616-32.png">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v616-180.png?v=6160">
 <title>OrdiPilot</title>
 <style>
 @font-face{font-family:"Carlito";font-style:normal;font-weight:400;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-400-normal.woff2") format("woff2")}
@@ -1167,7 +1168,7 @@ setupV67();
 
   // UI copy and version.
   const help=document.querySelector('#panel-entries .v6-page-sub');if(help)help.textContent='Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
-  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.15.0')});
+  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.16.0')});
   applyRecipientToLegacy(state.settings.activeRecipientId,false);if(window.setRecipientName){setRecipientName.value=state.settings.recipientName||'';setRecipientQualification.value=state.settings.recipientQualification||'';setRecipientAddress.value=state.settings.recipientAddress||'';setRecipientEmail.value=state.settings.recipientEmail||''}
   invNumber.value=invoiceRecord()?.number||defaultInvoiceNumber(invYear.value,invMonth.value);
   renderRecipientManager();renderEntries();renderParking();renderInvoice();saveState(false);
@@ -1180,7 +1181,7 @@ setupV67();
 /* OrdiPilot V6.12 · Empfängerspezifische Honorarnoten-Texte (vormals v6113-hotfix.js, jetzt fest eingebaut). */
 (function(){
   'use strict';
-  const VERSION='6.15.0';
+  const VERSION='6.16.0';
   const DEFAULT_ROLE='Ordinationsinhaberin';
   const DEFAULT_SERVICE='Ärztliche Vertretungstätigkeit';
 
@@ -1443,6 +1444,7 @@ setupV67();
     check(remote.invoices,merged.invoices,{},'key','INVOICES');
     check(remote.payments,merged.payments,merged.deletedPayments,'id','PAYMENTS');
     check(remote.trips,merged.trips,merged.deletedTrips,'id','TRIPS');
+    check(remote.expenses,merged.expenses,merged.deletedExpenses,'id','EXPENSES');
     if(!isEmptyState(remote)&&isEmptyState(merged))throw new Error('SYNC_GUARD_EMPTY_MERGE');
   }
 
@@ -1616,17 +1618,19 @@ setupV67();
     clone:x=>JSON.parse(JSON.stringify(x)),
     merge:(local,remote)=>{const settings=C.mergeSettings(local.settings,remote.settings);const out=mergeStates(local,remote);out.settings=settings;
       // V6.14: Zahlungseingänge und Fahrten (mit Lösch-Grabsteinen) wie Einsätze zusammenführen
-      for(const [k,d] of [['payments','deletedPayments'],['trips','deletedTrips']]){const m=mergeCollections(local[k]||[],remote[k]||[],local[d]||{},remote[d]||{});out[k]=m.items;out[d]=m.deleted}
+      for(const [k,d] of [['payments','deletedPayments'],['trips','deletedTrips'],['expenses','deletedExpenses']]){const m=mergeCollections(local[k]||[],remote[k]||[],local[d]||{},remote[d]||{});out[k]=m.items;out[d]=m.deleted}
       return normalizeState(out)},
     afterMerge:async()=>{
       for(const h of hooks()){try{h()}catch(e){console.warn('Sync-Hook',e)}}
       await repairWipedSettings(state.settings);
       for(const h of hooks()){try{h()}catch(e){}} // Empfänger nach Reparatur erneut normalisieren
       state.invoices=C.dedupeInvoices(state.invoices);
-      await importEasyParkFromDropbox(false);reconcileParkingAssignments();
+      await importEasyParkFromDropbox(false);
+      for(const h of (Array.isArray(window.ordipilotSyncHooksAsync)?window.ordipilotSyncHooksAsync:[])){try{await h()}catch(e){console.warn('Sync-Hook',e)}}
+      reconcileParkingAssignments();
     },
     confirmCreate:async(p,opts)=>!!(opts&&opts.interactive)&&confirm(`Die Datendatei wurde in Dropbox nicht gefunden:\n${p}\n\nNur bestätigen, wenn du sie bewusst mit den Daten dieses Geräts neu anlegen willst. Im Zweifel abbrechen.`),
-    status:(t,k)=>{setDropboxStatus(repairNote&&k==='on'?`${t} · ${repairNote}`:t,k)},
+    status:(t,k)=>{const extra=k==='on'?[repairNote,window.ordipilotAutoNote?window.ordipilotAutoNote():''].filter(Boolean).join(' · '):'';setDropboxStatus(extra?`${t} · ${extra}`:t,k)},
     persist:()=>{saveState(false);try{localStorage.setItem(LAST_OK,new Date().toISOString())}catch(e){}updateSyncReminder()},
     refresh:()=>{try{loadSettingsForm()}catch(e){}try{if(typeof renderRecipientManager==='function')renderRecipientManager()}catch(e){}try{refreshAll(false)}catch(e){}}
   });
@@ -1749,17 +1753,20 @@ setupV67();
     const missingKm=[...new Set(trips.filter(t=>t.missing==='home').map(t=>t.recipientId))].map(id=>recById(id));
     const missingWorkKm=[...new Set(trips.filter(t=>t.missing==='work').map(t=>t.recipientId))].map(id=>recById(id));
 
+    // Weitere Betriebsausgaben (erweiterte Option): Betrag × betrieblicher Anteil
+    const expenses=(input.expenses||[]).filter(x=>x&&String(x.date||'').startsWith(Y+'-')).map(x=>{const share=Number(x.share??100);const sh=Number.isFinite(share)?Math.min(100,Math.max(0,share)):100;return {...x,amount:r2(x.amount),share:sh,deductible:r2((Number(x.amount)||0)*sh/100)}}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     const totals={
       income:r2(income.reduce((t,p)=>t+p.amount,0)),
+      other:r2(expenses.reduce((t,x)=>t+x.deductible,0)),
       services:r2(servicesY.reduce((t,x)=>t+x.gross,0)),
       open:r2(servicesY.reduce((t,x)=>t+x.open,0)),
       parking:r2(parking.reduce((t,p)=>t+(Number(p.amount)||0),0)),
       tripKm:r2(carTrips.reduce((t,x)=>t+x.km,0)),
       trips:r2(carTrips.reduce((t,x)=>t+x.amount,0)),
     };
-    totals.expenses=r2(totals.parking+totals.trips);
+    totals.expenses=r2(totals.parking+totals.trips+totals.other);
     totals.surplus=r2(totals.income-totals.expenses);
-    return {year:Y,rate,services,servicesY,income,parkingUnassigned,parking:parking.map(p=>({...p,entryLabel:entryById.get(p.entryId)?.date||''})),trips,carTrips,missingKm,missingWorkKm,
+    return {year:Y,rate,services,servicesY,income,parkingUnassigned,expenses,parking:parking.map(p=>({...p,entryLabel:entryById.get(p.entryId)?.date||''})),trips,carTrips,missingKm,missingWorkKm,
       fromHome:carTrips.filter(t=>t.mode==='car').length,fromWork:carTrips.filter(t=>t.mode==='work').length,
       tripsWithoutParking:carTrips.filter(t=>!t.hasParking).length,totals};
   }
@@ -1787,6 +1794,9 @@ setupV67();
       [`Fahrten_${Y}.csv`]:csv([['Datum','Strecke','Start','Einsatzort','Ziel','Zweck','Kilometer gesamt','Satz (EUR/km)','Betrag (EUR)','Kilometer manuell','Parkbeleg vorhanden'],
         ...rep.carTrips.map(t=>[dateAT(t.date),t.route,t.from,t.via,t.to,t.purpose,t.km,t.rate,t.amount,t.custom?'ja':'nein',t.hasParking?'ja':'nein']),
         [],['Summe','','','','','',rep.totals.tripKm,'',rep.totals.trips,'','']]),
+      ...(rep.expenses.length?{[`Weitere_Ausgaben_${Y}.csv`]:csv([['Datum','Kategorie','Beschreibung','Betrag (EUR)','Betrieblicher Anteil (%)','Absetzbar (EUR)','Beleg'],
+        ...rep.expenses.map(x=>[dateAT(x.date),x.category||'',x.note||'',x.amount,String(x.share),x.deductible,x.receipt||'']),
+        [],['Summe','','','','',rep.totals.other,'']])}:{}),
     };
   }
   root.OrdiPilotTaxCore={yearReport,csv,csvFiles,paidYear,monthLabel,r2};
@@ -1810,13 +1820,16 @@ setupV67();
     if(!Array.isArray(state.trips))state.trips=[];
     if(!state.deletedPayments||typeof state.deletedPayments!=='object')state.deletedPayments={};
     if(!state.deletedTrips||typeof state.deletedTrips!=='object')state.deletedTrips={};
+    if(!Array.isArray(state.expenses))state.expenses=[];
+    if(!state.deletedExpenses||typeof state.deletedExpenses!=='object')state.deletedExpenses={};
   }
   function report(){
     ensure();
-    return T.yearReport({entries:state.entries,parking:state.parkingRecords,invoices:state.invoices,payments:state.payments,trips:state.trips,settings:state.settings,year,
+    return T.yearReport({entries:state.entries,parking:state.parkingRecords,invoices:state.invoices,payments:state.payments,trips:state.trips,expenses:state.settings.expensesEnabled?state.expenses:[],settings:state.settings,year,
       fns:{isEarned:e=>isEarnedEntry(e),hours:e=>entryHours(e)||0,gross:e=>gross(e)||0}});
   }
   function touchSettings(){state.settings._updatedAt=now()}
+  const EXP_CATS=['Ärztekammer / Wohlfahrtsfonds','Sozialversicherung (SVS)','Berufshaftpflicht','Fortbildung & Kongresse','Fachliteratur','Arbeitsmittel & Kleidung','Telefon & Internet (Anteil)','Steuerberatung','Sonstiges'];
   function save(){saveState();render()}
 
   // ---- Zahlungen ----
@@ -1899,6 +1912,7 @@ setupV67();
         <div><span>Erbrachte Leistungen ${year}<small>${rep.servicesY.length} Abrechnungsmonate${t.open>0?` · davon offen ${eur(t.open)}`:''}</small></span><b>${eur(t.services)}</b></div>
         <div><span>Parkkosten<small>${rep.parking.length} Belege${rep.parkingUnassigned.length?` · ${rep.parkingUnassigned.length} ohne Einsatz nicht gezählt (Parken prüfen)`:''}</small></span><b>− ${eur(t.parking)}</b></div>
         <div><span>Fahrtkosten<small>${rep.carTrips.length} Fahrten${rep.fromWork?` (${rep.fromHome} ab Wohnung, ${rep.fromWork} ab Arbeit)`:''} · ${String(t.tripKm).replace('.',',')} km × ${String(rep.rate.toFixed(2)).replace('.',',')} €</small></span><b>− ${eur(t.trips)}</b></div>
+        ${s.expensesEnabled?`<div><span>Weitere Betriebsausgaben<small>${rep.expenses.length} Posten</small></span><b>− ${eur(t.other)}</b></div>`:''}
         <div class="v614-total"><span>Vorläufiger Überschuss</span><b>${signed(t.surplus)}</b></div>
       </div>
       <div class="v614-note">Nur die Posten aus OrdiPilot – weitere Betriebsausgaben (z. B. Kammer, Versicherung, Fortbildung) und die steuerliche Beurteilung kommen vom Steuerberater.</div>
@@ -1916,6 +1930,20 @@ setupV67();
           <div class="help">Pro Einsatz gilt der Standard-Start; abweichende Tage unten auf „ab Wohnung“, „ab Arbeit“ oder „kein Auto“ stellen. Ab Arbeit = Arbeitsplatz → Ordination → Wohnung. Kilometer pro Tag lassen sich direkt überschreiben. „Route prüfen“ öffnet die Strecke in Karten. 🅿︎ = Parkbeleg vorhanden.</div>
           <div class="help">Steuerlich offen: ob bei Fahrten ab dem Arbeitsplatz die ganze Strecke oder nur der Umweg gegenüber dem normalen Heimweg zählt – das klärt der Steuerberater. Die App dokumentiert die tatsächlich gefahrene Strecke.</div>
         </div><div class="v614-list">${tripRows}</div></details>
+      ${s.expensesEnabled?`<details ${openSections.has('v614Exp')?'open':''} id="v614Exp"><summary>Weitere Betriebsausgaben <span>${rep.expenses.length} · ${eur(t.other)}</span></summary>
+        <div class="v614-settings">
+          <div class="v614-form" style="padding-top:0">
+            <label>Datum<input type="date" id="v616ExpDate" value="${todayISO().startsWith(year)?todayISO():year+'-12-31'}"></label>
+            <label>Betrag (€)<input type="number" step="0.01" min="0" inputmode="decimal" id="v616ExpAmount" placeholder="0,00"></label>
+            <label class="full">Kategorie<select id="v616ExpCat">${EXP_CATS.map(c=>`<option>${esc(c)}</option>`).join('')}</select></label>
+            <label class="full">Beschreibung<input id="v616ExpNote" placeholder="z. B. Jahresbeitrag, Kongress, Fachbuch"></label>
+            <label>Betrieblicher Anteil (%)<input type="number" min="0" max="100" step="5" id="v616ExpShare" value="100"></label>
+            <div class="v614-actions" style="align-items:end"><button class="btn primary" id="v616ExpAdd">Hinzufügen</button></div>
+          </div>
+          <div class="help">Nur Ausgaben für die Vertretungstätigkeit. Bei gemischt genutzten Dingen (Handy, Internet) den betrieblichen Anteil eintragen. Was absetzbar ist, entscheidet der Steuerberater.</div>
+        </div>
+        <div class="v614-list">${rep.expenses.map(x=>`<div class="v614-row"><div><div class="t">${esc(x.category)} · ${eur(x.deductible)}</div><div class="m">${dateAT(x.date)}${x.note?` · ${esc(x.note)}`:''}${x.share<100?` · ${x.share} % von ${eur(x.amount)}`:''}</div></div><button class="v614-pill open" data-expdel="${esc(x.id)}" aria-label="Entfernen">entfernen</button></div>`).join('')||'<div class="v614-row"><div class="m">Noch keine Ausgaben für dieses Jahr.</div></div>'}</div></details>`
+        :`<button class="btn" id="v616ExpOn" style="width:100%;margin-top:4px">+ Weitere Betriebsausgaben erfassen (erweitert)</button>`}
       <div class="v614-buttons"><button class="btn primary" id="v614Export">Steuerpaket ${year} in Dropbox erstellen</button><button class="btn soft" id="v614Share">Dateien teilen / herunterladen</button></div>
       <div class="v614-status" id="v614Status">${esc(statusText||lastExp)}</div>`;
   }
@@ -1936,6 +1964,7 @@ setupV67();
       if(t.id==='v614Work'){state.settings.travelWork=t.value.trim();touchSettings();save();return}
       if(t.id==='v614DefStart'){state.settings.travelDefaultStart=t.value==='work'?'work':'car';touchSettings();save();return}
       if(t.id==='v614Rate'){const v=Number(String(t.value).replace(',','.'));state.settings.travelRate=v>0?v:0.5;touchSettings();save();return}
+      if(t.id==='v616ExpCat'){const sh=document.getElementById('v616ExpShare');if(sh)sh.value=/Anteil/.test(t.value)?'50':'100';return}
       if(t.name==='unknown'){const f=t.closest('[data-form]');const d=f?.querySelector('[name=date]');if(d)d.disabled=t.checked}
     });
     el.addEventListener('click',ev=>{
@@ -1955,6 +1984,11 @@ setupV67();
         if(!confirm(`${list.length} Monate (${list[0].label} – ${list[list.length-1].label}, zusammen ${eur(list.reduce((t,x)=>t+x.gross,0))}) als im Jahr ${year} bezahlt markieren?\n\nDas genaue Datum bleibt „nicht erfasst“. Nur bestätigen, wenn diese Honorare tatsächlich ${year} eingegangen sind.`))return;
         for(const x of list)addPayment(x.key,{paidYear:year,amount:x.gross});save();return;
       }
+      if(b.id==='v616ExpOn'){state.settings.expensesEnabled=true;touchSettings();openSections.add('v614Exp');save();return}
+      if(b.id==='v616ExpAdd'){const amount=Number(String(document.getElementById('v616ExpAmount').value).replace(',','.')),date=document.getElementById('v616ExpDate').value;
+        if(!(amount>0)){alert('Bitte einen Betrag eingeben.');return}if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){alert('Bitte ein Datum wählen.');return}
+        ensure();state.expenses.push({id:uuid('exp'),date,category:document.getElementById('v616ExpCat').value,note:document.getElementById('v616ExpNote').value.trim(),amount:T.r2(amount),share:Math.min(100,Math.max(0,Number(document.getElementById('v616ExpShare').value)||100)),updatedAt:now()});save();return}
+      if(b.dataset.expdel){if(confirm('Diese Ausgabe entfernen?')){ensure();state.deletedExpenses[b.dataset.expdel]=now();state.expenses=state.expenses.filter(x=>x.id!==b.dataset.expdel);save()}return}
       if(b.id==='v614Export'){exportPackage();return}
       if(b.id==='v614Share'){shareFiles();return}
     });
@@ -1982,6 +2016,7 @@ setupV67();
     const sumRows=[[`Einnahmen ${rep.year} (Zahlungseingang)`,t.income],[`Parkkosten (${rep.parking.length} Belege)`,-t.parking],[`Fahrtkosten (${rep.carTrips.length} Fahrten${rep.fromWork?`, davon ${rep.fromWork} ab Arbeitsplatz`:''}, ${String(t.tripKm).replace('.',',')} km × ${rep.rate.toFixed(2).replace('.',',')} €)`,-t.trips]];
     text(L,'Zusammenfassung',12,bold);y-=18;
     for(const [k,v] of sumRows){line();text(L,k);right(R,money(v));y-=16}
+    if(rep.expenses.length){line();text(L,`Weitere Betriebsausgaben (${rep.expenses.length} Posten)`);right(R,money(-t.other));y-=16}
     line();text(L,'Vorläufiger Überschuss',10,bold);right(R,money(t.surplus),10,bold);y-=16;
     y-=4;text(L,`Erbrachte Leistungen ${rep.year}: ${money(t.services)}${t.open>0?` · davon noch offen: ${money(t.open)}`:''}`,9,reg,grey);y-=28;
     const table=(title,cols,rows,total)=>{
@@ -1995,6 +2030,7 @@ setupV67();
       rep.income.map(p=>[p.paidAt?dateAT(p.paidAt):`${T.paidYear(p)} (o. D.)`,p.label,p.recipientName,p.invoiceNumber||'–',money(p.amount)]),money(t.income));
     table(`Leistungen ${rep.year} und offene Posten`,[['Monat',L,'',22],['Empfänger',L+92,'',30],['Std.',L+275,'r'],['Honorar',L+345,'r'],['Offen',L+415,'r'],['Status',L+428]],
       rep.servicesY.map(x=>[x.label,x.recipientName,String(x.hours).replace('.',','),money(x.gross),x.open>0?money(x.open):'–',x.status]),money(t.services));
+    if(rep.expenses.length)table('Weitere Betriebsausgaben',[['Datum',L],['Kategorie',L+62,'',30],['Beschreibung',L+235,'',34],['Absetzbar',R,'r']],rep.expenses.map(x=>[dateAT(x.date),x.category,x.note+(x.share<100?` (${x.share} %)`:''),money(x.deductible)]),money(t.other));
     need(80);text(L,'Belege und Details',12,bold);y-=16;
     for(const l of [`Einnahmen_${rep.year}.csv, Leistungen_${rep.year}.csv, Parkkosten_${rep.year}.csv, Fahrten_${rep.year}.csv`,'Honorarnoten, Parkbelege und Zahlungsnachweise als PDF in den Unterordnern dieses Steuerpakets.','Fahrten: Wohnung – Ordination – Wohnung bzw. Arbeitsplatz – Ordination – Wohnung (tatsächliche Strecke), Kilometergeld lt. obigem Satz.','Vorläufige Aufstellung ohne weitere Betriebsausgaben; steuerliche Beurteilung durch den Steuerberater.']){need(13);text(L,l,9,reg,grey);y-=13}
     return new Blob([await doc.save()],{type:'application/pdf'});
@@ -2258,6 +2294,201 @@ setupV67();
   if(typeof focusFirstUnassignedParking==='function'){const baseFocus=focusFirstUnassignedParking;focusFirstUnassignedParking=function(){const el=document.querySelector('#parkingCards .v615-day[data-unassigned="1"]');if(el){const d=el.closest('details');if(d)d.open=true;el.scrollIntoView({behavior:'smooth',block:'center'});return}return baseFocus.apply(this,arguments)}}
   window.ordipilotV615={vstatus,decorateEntries,decorateParking};
   try{renderEntries();renderParking()}catch(e){console.warn('V6.15',e)}
+})();
+
+</script>
+<script id="v616-auto">
+/* ===== OrdiPilot V6.16 · Automatik =====
+   1. Standort-Automatik: iPhone-Kurzbefehle schreiben Ankunft/Abfahrt an der Ordination (und „Klinik verlassen“)
+      als Zeile in Dropbox. Beim Sync werden daraus Zeiten für den Einsatz, fehlende Einsätze und „ab Arbeit“-Fahrten.
+   2. Zahlungsnachweise in Dropbox markieren den Monat automatisch als bezahlt.
+   3. Monatsende-Hinweis für die Honorarnote.
+   Der Teil bis "Verdrahtung" ist rein funktional und wird von tests/ in Node geprüft. */
+(function(root){
+  'use strict';
+  const EVENTS={ankunft:'arrive',arrive:'arrive',abfahrt:'leave',leave:'leave',klinik:'work',klinik_ab:'work',arbeit:'work',work:'work'};
+  // Zeile: "2026-10-28T08:47:12+01:00 ankunft" oder "28.10.2026, 08:47 ankunft"
+  function parseLog(text){
+    const out=[];
+    for(const raw of String(text||'').split(/\r?\n/)){
+      const line=raw.trim();if(!line||line.startsWith('#'))continue;
+      let m=line.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})\S*\s+([A-Za-zäöü_]+)/),date,time,word;
+      if(m){date=`${m[1]}-${m[2]}-${m[3]}`;time=`${m[4].padStart(2,'0')}:${m[5]}`;word=m[6]}
+      else{m=line.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4}),?\s+(\d{1,2}):(\d{2})\S*\s+([A-Za-zäöü_]+)/);if(!m)continue;date=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;time=`${m[4].padStart(2,'0')}:${m[5]}`;word=m[6]}
+      const type=EVENTS[word.toLowerCase()];if(type)out.push({date,time,type});
+    }
+    return out;
+  }
+  const tm=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};
+  // Pro Tag: erste Ankunft, letzte Abfahrt danach, „ab Arbeit“ wenn die Klinik höchstens 3 h vor Ankunft verlassen wurde
+  function summarize(events){
+    const days=new Map();
+    for(const e of events){if(!days.has(e.date))days.set(e.date,[]);days.get(e.date).push(e)}
+    const out=[];
+    for(const [date,list] of days){
+      list.sort((a,b)=>tm(a.time)-tm(b.time));
+      const arrive=list.find(e=>e.type==='arrive');if(!arrive)continue;
+      const leave=[...list].reverse().find(e=>e.type==='leave'&&tm(e.time)>tm(arrive.time));
+      const work=[...list].reverse().find(e=>e.type==='work'&&tm(e.time)<=tm(arrive.time)&&tm(arrive.time)-tm(e.time)<=180);
+      out.push({date,arrive:arrive.time,leave:leave?.time||'',fromWork:!!work});
+    }
+    return out.sort((a,b)=>a.date.localeCompare(b.date));
+  }
+  // Zahlungsnachweis-Dateien → bezahlte Monate (Jahr der Zahlung = Jahr, in dem der Nachweis abgelegt wurde)
+  function proofsToMonths(files){
+    const out=[];
+    for(const f of files||[]){const m=String(f.name||'').match(/^(\d{4})-(\d{2})_Zahlungsnachweis/i);if(m)out.push({ym:`${m[1]}-${m[2]}`,paidYear:String(f.client_modified||f.server_modified||'').slice(0,4)||m[1],file:f.name})}
+    return out;
+  }
+  root.OrdiPilotAutoCore={parseLog,summarize,proofsToMonths};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* ===== Verdrahtung mit der App ===== */
+(function(){
+  'use strict';
+  if(typeof document==='undefined'||typeof state==='undefined')return;
+  const A=window.OrdiPilotAutoCore;
+  const ROOT='/Ordination & Selbständigkeit/Vertretungsdienste';
+  const LOG=ROOT+'/System/Import/standort.txt';
+  const esc=v=>escapeHtml(v);
+  const now=()=>new Date().toISOString();
+  const primaryRid=()=>(state.settings.recipients||[])[0]?.id||'recipient-primary';
+  const locked=e=>{try{return !!window.ordipilotRecipientMonthLocked&&window.ordipilotRecipientMonthLocked(e.date.slice(0,7),e.recipientId||primaryRid())}catch(_){return false}};
+  let lastNote='';
+
+  // ---- 1. Standort ----
+  function applyGeo(days){
+    let created=0,updated=0,work=0;
+    if(!Array.isArray(state.trips))state.trips=[];if(!state.deletedTrips)state.deletedTrips={};
+    for(const d of days){
+      let e=(state.entries||[]).find(x=>x.date===d.date);
+      if(!e){
+        const id='geo-'+d.date;
+        if(state.deletedEntries&&state.deletedEntries[id])continue; // bewusst gelöscht – nicht wieder anlegen
+        e={id,date:d.date,start:'',end:'',plannedStart:d.arrive,plannedEnd:d.leave||'',breakMinutes:0,manualHours:null,rate:Number(state.settings.defaultRate||0),note:'automatisch erkannt (Standort)',planningOnly:true,confirmedAt:null,recipientId:primaryRid(),source:'geo',updatedAt:now()};
+        state.entries.push(e);created++;
+      }
+      if(e.confirmedAt||locked(e))continue; // bestätigte/abgerechnete Einsätze bleiben unangetastet
+      if(e.geoArrive!==d.arrive||e.geoLeave!==d.leave||e.geoFromWork!==d.fromWork){e.geoArrive=d.arrive;e.geoLeave=d.leave;e.geoFromWork=d.fromWork;e.updatedAt=now();updated++}
+      if(d.fromWork){
+        const id='trip-'+e.id,cur=state.trips.find(t=>t.id===id);
+        if(!cur||(cur.auto&&cur.mode!=='work')){state.trips=state.trips.filter(t=>t.id!==id).concat([{id,entryId:e.id,mode:'work',km:null,auto:true,updatedAt:now()}]);delete state.deletedTrips[id];work++}
+      }
+    }
+    return {created,updated,work};
+  }
+  async function importGeo(){
+    if(!isDropboxConnected())return;
+    const blob=await dbxDownload(LOG);if(!blob)return;
+    const days=A.summarize(A.parseLog(await blob.text())).filter(d=>d.date>=addDaysISO(todayISO(),-60)&&d.date<=todayISO());
+    const r=applyGeo(days);
+    state.settings.geoLastEvent=days.length?days[days.length-1].date+' '+(days[days.length-1].leave||days[days.length-1].arrive):state.settings.geoLastEvent||'';
+    if(r.created||r.updated)lastNote=`Standort: ${r.created?r.created+' Einsatz neu erkannt':''}${r.created&&r.updated?', ':''}${r.updated?r.updated+' Zeiten übernommen':''}`;
+  }
+  function addDaysISO(iso,n){const [y,m,d]=iso.split('-').map(Number),x=new Date(y,m-1,d+n);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
+
+  // ---- 2. Zahlungsnachweise ----
+  async function importProofs(){
+    if(!isDropboxConnected())return;
+    if(!Array.isArray(state.payments))state.payments=[];
+    const y=new Date().getFullYear(),files=[];
+    for(const yr of [y-1,y]){try{const r=await dbxRpc('files/list_folder',{path:`${ROOT}/Zahlungsnachweise/${yr}`,recursive:false});files.push(...(r.entries||[]).filter(x=>x['.tag']==='file'))}catch(e){if(!/not_found/.test(String(e.message||e)))console.warn(e)}}
+    let n=0;
+    for(const p of A.proofsToMonths(files)){
+      const key=`${p.ym}::${primaryRid()}`;
+      if(state.payments.some(x=>x.key===key))continue;
+      const id='pay-proof-'+p.ym;if(state.deletedPayments&&state.deletedPayments[id])continue;
+      const gross=(state.entries||[]).filter(e=>e.date?.startsWith(p.ym+'-')&&isEarnedEntry(e)&&(e.recipientId||primaryRid())===primaryRid()).reduce((t,e)=>t+(window.gross(e)||0),0);
+      if(!(gross>0))continue;
+      state.payments.push({id,key,paidAt:'',paidYear:p.paidYear,amount:Math.round(gross*100)/100,note:`automatisch: ${p.file}`,source:'proof',updatedAt:now()});n++;
+    }
+    if(n)lastNote=(lastNote?lastNote+' · ':'')+`${n} Monat${n===1?'':'e'} per Zahlungsnachweis als bezahlt markiert`;
+  }
+  (window.ordipilotSyncHooksAsync=window.ordipilotSyncHooksAsync||[]).push(async()=>{lastNote='';try{await importGeo()}catch(e){console.warn('Standort-Import',e)}try{await importProofs()}catch(e){console.warn('Zahlungsnachweise',e)}});
+  window.ordipilotAutoNote=()=>lastNote;
+
+  // Bestätigen: erkannte Zeiten vorausfüllen
+  const baseOpen=openEntry;
+  openEntry=function(id,mode,date){
+    const out=baseOpen.apply(this,arguments);
+    try{const e=id&&(state.entries||[]).find(x=>x.id===id);
+      // erkannte (tatsächliche) Zeiten haben Vorrang vor der geplanten Zeit, aber nicht vor schon eingetragenen anderen Werten
+      const planned=v=>!v||v===e.plannedStart||v===e.plannedEnd||v===e.start||v===e.end;
+      if(e&&e.geoArrive&&!e.confirmedAt&&window.fStart&&planned(fStart.value)){fStart.value=e.geoArrive;if(e.geoLeave&&window.fEnd&&planned(fEnd.value))fEnd.value=e.geoLeave;[fStart,fEnd].forEach(x=>x&&x.dispatchEvent(new Event('input',{bubbles:true})))}
+    }catch(_){}
+    return out;
+  };
+
+  // Einsatzkarte: Hinweis auf erkannte Zeiten
+  if(typeof renderEntries==='function'){const base=renderEntries;renderEntries=function(){const out=base.apply(this,arguments);try{
+    for(const card of document.querySelectorAll('#entryCards .v611-entry-card[data-entry-id]')){
+      const e=(state.entries||[]).find(x=>x.id===card.dataset.entryId);if(!e||!e.geoArrive||e.confirmedAt||card.querySelector('.v616-geo'))continue;
+      const t=card.querySelector('.v611-time');if(t)t.insertAdjacentHTML('afterend',`<div class="v616-geo">📍 erkannt ${esc(e.geoArrive)}${e.geoLeave?'–'+esc(e.geoLeave):''}${e.geoFromWork?' · ab Arbeit':''} – zum Übernehmen bestätigen</div>`);
+    }}catch(e){console.warn(e)}return out}}
+
+  // ---- 3. Monatsende ----
+  function monthEndBanner(){
+    const host=document.getElementById('panel-dashboard');if(!host)return;
+    let el=document.getElementById('v616MonthEnd');
+    const t=todayISO(),[y,m,d]=t.split('-').map(Number),last=new Date(y,m,0).getDate();
+    let ty=y,tm=m;if(d<=7){tm=m-1;if(!tm){tm=12;ty=y-1}}
+    const due=d>=last-2||d<=7,key=`${ty}-${String(tm).padStart(2,'0')}`;
+    const done=(state.entries||[]).filter(e=>e.date?.startsWith(key+'-')&&isEarnedEntry(e)).length;
+    const rec=(state.invoices||[]).find(r=>r.key===`${key}::${primaryRid()}`||r.key===key);
+    const show=due&&done>0&&!(rec&&(rec.createdAt||rec.signedAt));
+    if(!show){if(el)el.remove();return}
+    if(!el){el=document.createElement('button');el.id='v616MonthEnd';el.type='button';el.className='v616-monthend';const head=host.querySelector('.v6-page-head');(head||host.firstChild).insertAdjacentElement('afterend',el);
+      el.onclick=()=>{document.querySelector('[data-tab=invoice]')?.click();try{invYear.value=String(ty);invMonth.value=String(tm).padStart(2,'0');invMonth.dispatchEvent(new Event('change'))}catch(_){}}}
+    el.innerHTML=`<b>Monatsende:</b> Honorarnote ${MONTHS[tm-1]} ${ty} erstellen <span>›</span>`;
+  }
+
+  // ---- Einrichtung (Parken → Automatik) ----
+  function guide(){
+    const auto=document.querySelector('#panel-parking .v62-auto-card');if(!auto)return;
+    let el=document.getElementById('v616Guide');const wasOpen=el?.open;
+    if(!el){el=document.createElement('details');el.id='v616Guide';el.className='v615-nopark-card no-print';(document.getElementById('v615NoPark')||auto).insertAdjacentElement('afterend',el)}
+    const lastEv=state.settings.geoLastEvent;
+    const line=w=>`<code>[Formatiertes Datum] ${w}</code>`;
+    el.innerHTML=`<summary><span>Standort-Automatik (iPhone)</span><span style="color:#8e8e93;font-weight:650;font-size:13px">${lastEv?'zuletzt '+esc(dateAT(lastEv.slice(0,10)))+' '+esc(lastEv.slice(11)):'nicht eingerichtet'} ›</span></summary>
+    <div class="v615-nopark-list v616-guide">
+      <p>Das iPhone meldet Ankunft und Abfahrt an der Ordination automatisch in Dropbox. OrdiPilot übernimmt daraus beim nächsten Sync die Zeiten, legt vergessene Einsätze zum Bestätigen an und erkennt Fahrten „ab Arbeit“.</p>
+      <ol>
+        <li><b>Kurzbefehle</b> → <b>Automation</b> → <b>+</b> → <b>Ankommen</b>. Ort: <b>${esc(state.settings.calendarEventLocation||'Adresse der Ordination')}</b>. <b>Sofort ausführen</b> wählen.</li>
+        <li>Aktionen: <b>Aktuelles Datum</b> → <b>Datum formatieren</b> (Format: <b>ISO 8601</b>, „ISO 8601-Uhrzeit einschließen“ an) → <b>Text</b>: ${line('ankunft')} → <b>An Textdatei anhängen</b>: Dienst <b>Dropbox</b>, Pfad unten, „Neue Zeile“ an.</li>
+        <li>Dasselbe mit <b>Verlassen</b> der Ordination und dem Wort <code>abfahrt</code>.</li>
+        <li>Optional: <b>Verlassen</b> der Klinik (${esc(state.settings.travelWork||'Arbeitsplatz')}) mit dem Wort <code>klinik</code>. Kommst du danach innerhalb von 3 Stunden in der Ordination an, zählt die Fahrt als „ab Arbeit“.</li>
+      </ol>
+      <div class="v616-path"><code id="v616Path">${esc(LOG)}</code><button type="button" class="btn soft" id="v616Copy">Pfad kopieren</button></div>
+      <p class="help">Bestätigte und abgerechnete Einsätze werden nie verändert. Erkannte Zeiten erscheinen beim Einsatz mit 📍 und werden erst beim Bestätigen übernommen. Ein gelöschter, automatisch erkannter Einsatz wird nicht wieder angelegt.</p>
+      <p class="help"><b>Zahlungsnachweise:</b> Liegt in Dropbox unter Zahlungsnachweise/&lt;Jahr&gt; eine Datei „JJJJ-MM_Zahlungsnachweis…“, wird der Monat automatisch als bezahlt markiert.</p>
+      <p class="help"><b>Monatsende:</b> In den letzten Tagen des Monats erinnert die Übersicht an die Honorarnote. Zusätzlich möglich: Kurzbefehle → Automation → <b>Monatlich</b> (letzter Tag, 18:00) → <b>Mitteilung anzeigen</b> „Honorarnote erstellen“.</p>
+    </div>`;
+    if(wasOpen)el.open=true;
+    el.querySelector('#v616Copy').onclick=async()=>{try{await navigator.clipboard.writeText(LOG);el.querySelector('#v616Copy').textContent='Kopiert'}catch(_){prompt('Pfad kopieren:',LOG)}};
+  }
+
+  // ---- Logo in der Kopfzeile ----
+  function logo(){
+    const mark=document.querySelector('.logo.brand-mark');if(!mark||mark.dataset.v616)return;mark.dataset.v616='1';
+    mark.innerHTML='<svg viewBox="0 0 1024 1024" aria-hidden="true" style="width:84%;height:84%"><path d="M 763.8 503.2 A 252 252 0 1 1 564.4 265.5" fill="none" stroke="#fff" stroke-width="76" stroke-linecap="round"/><path d="M 802.7 268.1 L 698.8 473.7 L 676.9 373.6 L 582.2 334.7 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round"/><circle cx="512" cy="512" r="56" fill="#fff"/></svg>';
+  }
+
+  function css(){
+    if(document.getElementById('v616-style'))return;const st=document.createElement('style');st.id='v616-style';
+    st.textContent=`.v616-geo{font-size:12px;font-weight:650;color:#5e5ce6;margin-top:4px}
+.v616-monthend{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;border:0;border-radius:16px;padding:14px 16px;margin:0 0 14px;background:linear-gradient(100deg,#fff1dc,#fff7ec);color:#7a4a00;font-size:15px;text-align:left;box-shadow:0 6px 18px rgba(255,149,0,.16)}
+.v616-monthend span{font-size:22px;color:#c77700}
+.v616-guide p{margin:8px 0;font-size:14px}.v616-guide ol{margin:6px 0 10px;padding-left:20px;font-size:14px;display:grid;gap:6px}
+.v616-guide code{font-size:12px;background:#f2f2f7;border-radius:6px;padding:1px 5px;word-break:break-all}
+.v616-path{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}.v616-path code{flex:1 1 220px}
+.logo.brand-mark{background:linear-gradient(135deg,#2f8cff,#3b3fd6)!important}`;
+    document.head.appendChild(st);
+  }
+
+  const baseRefresh=refreshAll;
+  refreshAll=function(){const out=baseRefresh.apply(this,arguments);try{monthEndBanner();guide()}catch(e){console.warn('V6.16',e)}return out};
+  css();logo();try{monthEndBanner();guide();renderEntries()}catch(e){console.warn('V6.16',e)}
+  window.ordipilotV616={applyGeo,importGeo,importProofs,monthEndBanner};
 })();
 
 </script>
