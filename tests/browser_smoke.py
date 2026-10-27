@@ -41,6 +41,7 @@ class FakeDropbox:
         self.files = {}      # lower path -> (display, bytes, rev)
         self.revs = {}       # rev -> bytes
         self.uploads = []
+        self.copies = []
         self.fail_metadata = False
         self.n = 0
 
@@ -73,6 +74,8 @@ class FakeDropbox:
             p = json.loads(body)["path"]
             f = self.files.get(p.lower())
             if not f:
+                if any(k.startswith(p.lower().rstrip("/") + "/") for k in self.files):
+                    return js(200, {".tag": "folder", "name": p.split("/")[-1], "path_lower": p.lower(), "path_display": p})
                 return js(409, {"error_summary": "path/not_found/.."})
             return js(200, {".tag": "file", "name": f[0].split("/")[-1], "path_lower": p.lower(), "path_display": f[0], "rev": f[2], "server_modified": f[3]})
         if endpoint == "files/download":
@@ -102,6 +105,17 @@ class FakeDropbox:
             entries = [{".tag": "file", "name": d.split("/")[-1], "path_lower": k, "path_display": d, "rev": r, "server_modified": m}
                        for k, (d, _, r, m) in self.files.items() if k.startswith(folder) and "/" not in k[len(folder):]]
             return js(200, {"entries": entries, "has_more": False})
+        if endpoint == "files/copy_v2":
+            a = json.loads(body); src = a["from_path"].lower().rstrip("/") + "/"; dst = a["to_path"]
+            items = [(k, v) for k, v in list(self.files.items()) if k.startswith(src)]
+            if not items:
+                return js(409, {"error_summary": "from_lookup/not_found/"})
+            if any(k.startswith(dst.lower().rstrip("/") + "/") for k in self.files):
+                return js(409, {"error_summary": "to/conflict/folder/"})
+            for k, (d, data, r, m) in items:
+                self.put(dst + d[len(src) - 1:], data)
+            self.copies.append((a["from_path"], dst))
+            return js(200, {"metadata": {".tag": "folder", "path_display": dst}})
         if endpoint == "files/create_folder_v2":
             return js(409, {"error_summary": "path/conflict/folder/"})
         return js(200, {})
@@ -117,8 +131,23 @@ def serve(directory):
     return srv
 
 
+VENDOR = os.environ.get("VENDOR_DIR")
+
+
+def vendor(route, request):
+    url = request.url
+    for key, rel in [("pdf-lib.min.js", "pdf-lib/dist/pdf-lib.min.js"), ("fontkit.umd.min.js", "@pdf-lib/fontkit/dist/fontkit.umd.min.js")]:
+        if key in url:
+            return route.fulfill(status=200, headers={"content-type": "application/javascript", "access-control-allow-origin": "*"}, body=open(os.path.join(VENDOR, "node_modules", rel), "rb").read())
+    if url.endswith(".ttf"):
+        return route.fulfill(status=200, headers={"content-type": "font/ttf", "access-control-allow-origin": "*"}, body=open("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "rb").read())
+    return route.fulfill(status=404, body="")
+
+
 def new_page(browser, base, dbx, local_state=None):
-    ctx = browser.new_context()
+    ctx = browser.new_context(accept_downloads=True)
+    if VENDOR:
+        ctx.route("https://cdn.jsdelivr.net/**", vendor)
     ctx.route("https://api.dropboxapi.com/**", dbx.handle)
     ctx.route("https://content.dropboxapi.com/**", dbx.handle)
     page = ctx.new_page()
@@ -134,9 +163,28 @@ def new_page(browser, base, dbx, local_state=None):
 
 
 results = []
+
+
+def until(page, fn, seconds=10.0, step=250):
+    """Wartet, bis fn() wahr ist (statt fester Wartezeiten). page.wait_for_timeout statt time.sleep,
+    damit Playwright währenddessen die simulierten Dropbox-Anfragen beantworten kann."""
+    end = time.time() + seconds
+    while time.time() < end:
+        try:
+            if fn():
+                return True
+        except Exception:
+            pass
+        page.wait_for_timeout(step)
+    return bool(fn())
+
+
 def check(name, cond, detail=""):
     results.append((name, bool(cond)))
     print(("  ✓ " if cond else "  ✗ ") + name + (f"  [{detail}]" if detail and not cond else ""))
+    if not cond and os.environ.get("GITHUB_ACTIONS"):
+        # als Annotation sichtbar machen (im Pull Request lesbar, ohne das Protokoll zu öffnen)
+        print(f"::error title=Browser-Test::{name} {str(detail)[:300]}".replace("\n", " "))
 
 
 def main():
@@ -175,7 +223,7 @@ def main():
         check("Keine JavaScript-Fehler", not errors, "; ".join(errors)[:300])
         uploads_before = len(dbx.uploads)
         page.evaluate("()=>syncDropbox.onclick()")
-        page.wait_for_timeout(1500)
+        until(page, lambda: len(dbx.uploads) > uploads_before, 10)
         check("Sync-Button läuft über den neuen Kern", len(dbx.uploads) > uploads_before and isinstance(dbx.uploads[-1][1], dict))
         # Rolle + Anrede pro Empfänger bleiben nach Neuladen erhalten
         page.evaluate("()=>{const r=document.getElementById('setRecipientRole');r.value='Ordinationsinhaber';r.dispatchEvent(new Event('change'));const s=document.getElementById('setSalutation');s.value='Sehr geehrter Herr Kollege,';s.dispatchEvent(new Event('change'))}")
@@ -216,17 +264,94 @@ def main():
         local = json.loads(json.dumps(cloud)); local["settings"]["dropboxAutoSync"] = False; local["settings"].pop("_v613AutoSyncDefault", None)
         local["entries"].append({"id": "auto1", "date": "2026-10-26", "start": "08:00", "end": "12:00", "breakMinutes": 0, "manualHours": None, "rate": 170, "updatedAt": "2026-10-26T12:00:00Z"})
         ctx, page, errors = new_page(browser, base, dbx, local)
-        page.wait_for_timeout(3500)
+        until(page, lambda: any(e["id"] == "auto1" for e in (dbx.get(DATA) or {}).get("entries", [])), 12)
         check("Bestehende Installation: Auto-Sync einmalig eingeschaltet", page.evaluate("()=>state.settings.dropboxAutoSync===true&&state.settings._v613AutoSyncDefault===true"))
         check("Beim Start automatisch synchronisiert (neuer Einsatz in Dropbox)", any(e["id"] == "auto1" for e in (dbx.get(DATA) or {}).get("entries", [])))
         n = len(dbx.uploads)
         page.evaluate("()=>{state.entries.push({id:'auto2',date:'2026-10-27',start:'08:00',end:'12:00',breakMinutes:0,manualHours:null,rate:170,updatedAt:new Date().toISOString()});saveState()}")
-        page.wait_for_timeout(3500)
+        until(page, lambda: any(e["id"] == "auto2" for e in dbx.get(DATA)["entries"]), 12)
         check("Nach einer Änderung automatisch gesichert", any(e["id"] == "auto2" for e in dbx.get(DATA)["entries"]) and len(dbx.uploads) > n)
         page.evaluate("()=>{state.settings.dropboxAutoSync=false;state.settings._updatedAt=new Date().toISOString();saveState(false)}")
         page.reload(); page.wait_for_function("()=>!!window.ordipilotSync"); page.wait_for_timeout(2000)
         check("Bewusst abgeschaltet bleibt abgeschaltet", page.evaluate("()=>state.settings.dropboxAutoSync===false"))
         check("Keine JavaScript-Fehler (Auto-Sync)", not errors, "; ".join(errors)[:300])
+        ctx.close()
+
+        print("6) Steuer & Belege")
+        dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
+        for i in range(3):
+            dbx.put(f"/Ordination & Selbständigkeit/Vertretungsdienste/Parkbelege/2026/09/Beleg_{i}.pdf", b"%PDF-1.4 test")
+        dbx.put("/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten/2026/2026-09_Honorarnote_Muster.pdf", b"%PDF-1.4 test")
+        local = json.loads(json.dumps(cloud)); local["settings"] = dict(backup["settings"], **{k: v for k, v in local["settings"].items() if v})
+        ctx, page, errors = new_page(browser, base, dbx, local)
+        page.wait_for_timeout(2500)
+        page.evaluate("()=>{document.querySelector('[data-tab=invoice]').click();ordipilotTax.setYear(2026)}")
+        page.wait_for_timeout(300)
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        exp_services = round(sum(x["gross"] for x in rep["servicesY"]), 2)
+        check("Steuer-Karte im Honorar-Bereich sichtbar", page.is_visible("#v614Tax"))
+        check("Leistungen = Summe der abgeschlossenen Einsätze", rep["totals"]["services"] == exp_services and exp_services > 0, str(rep["totals"]))
+        check("Ohne erfasste Zahlungen: Einnahmen 0, alles offen", rep["totals"]["income"] == 0 and rep["totals"]["open"] == rep["totals"]["services"])
+        check("Fehlende Entfernung wird angezeigt", page.is_visible("text=fehlt die Entfernung"))
+        # Zahlung über die Oberfläche erfassen
+        page.click("#v614Pays summary")
+        page.locator("[data-pay]").first.click()
+        page.fill("[data-form] [name=date]", "2026-10-03")
+        page.locator("[data-save]").first.click()
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        first = rep["servicesY"][0]
+        check("Zahlung erfasst: Monat bezahlt, Einnahme zählt", first["status"] == "bezahlt" and rep["totals"]["income"] == first["gross"], str(first["status"]))
+        # Sammelmarkierung
+        page.on("dialog", lambda d: d.accept())
+        if page.is_visible("#v614Bulk"):
+            page.click("#v614Bulk")
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        check("Sammelmarkierung: ältere Monate bezahlt (Datum offen)", sum(1 for p in rep["income"] if not p.get("paidAt")) >= 1)
+        # Entfernung + Fahrt anpassen
+        page.click("#v614Trips summary")
+        page.locator("[data-reckm]").first.fill("23"); page.locator("[data-reckm]").first.dispatch_event("change")
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        n_car = len(rep["carTrips"])
+        check("Fahrten: je Einsatz 46 km × 0,50 €", n_car == len(rep["trips"]) and all(t["km"] == 46 and t["amount"] == 23 for t in rep["carTrips"]), str(rep["carTrips"][:1]))
+        eid = rep["trips"][0]["entryId"]
+        page.select_option(f"[data-tripmode='{eid}']", "none")
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        check("Einsatz ohne Auto zählt nicht", len(rep["carTrips"]) == n_car - 1)
+        page.fill("#v614Home", "Teststraße 1, 1050 Wien"); page.locator("#v614Home").dispatch_event("change")
+        page.fill("#v614Work", "Klinik Donaustadt, Langobardenstraße 122, 1220 Wien"); page.locator("#v614Work").dispatch_event("change")
+        page.locator("[data-reckmwork]").first.fill("25"); page.locator("[data-reckmwork]").first.dispatch_event("change")
+        eid2 = rep["trips"][1]["entryId"]
+        page.select_option(f"[data-tripmode='{eid2}']", "work")
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        t2 = next(t for t in rep["trips"] if t["entryId"] == eid2)
+        check("Fahrt ab Arbeit: 25 + 23 = 48 km", t2["mode"] == "work" and t2["km"] == 48 and t2["from"].startswith("Klinik"), str(t2)[:200])
+        check("Link zum Prüfen der Route vorhanden", page.locator("a.v614-map").count() >= 1)
+        page.locator(f"[data-tripkm='{eid2}']").fill("52"); page.locator(f"[data-tripkm='{eid2}']").dispatch_event("change")
+        t2 = next(t for t in page.evaluate("()=>ordipilotTax.report()")["trips"] if t["entryId"] == eid2)
+        check("Manuelle km behalten den Start ab Arbeit", t2["mode"] == "work" and t2["km"] == 52 and t2["custom"])
+        check("Überschuss = Einnahmen − Parken − Fahrten", abs(rep["totals"]["surplus"] - (rep["totals"]["income"] - rep["totals"]["parking"] - rep["totals"]["trips"])) < 0.01)
+        # Sync behält Zahlungen und Fahrten
+        ok = page.evaluate("()=>syncWithDropbox({interactive:true})")
+        cl = dbx.get(DATA)
+        check("Sync überträgt Zahlungen und Fahrten", ok and len(cl.get("payments", [])) == len(page.evaluate("()=>state.payments")) and len(cl.get("trips", [])) == 2)
+        # Export
+        page.click("#v614Export")
+        page.wait_for_function("()=>/Steuerpaket erstellt|nicht erstellt/.test(document.getElementById('v614Status').textContent)", timeout=20000)
+        status = page.inner_text("#v614Status")
+        base_dir = next((k for k in dbx.files if "/steuerberater/2026/stand_" in k), "")
+        exported = sorted(dbx.files[k][0].split("/")[-1] for k in dbx.files if "/steuerberater/2026/" in k and k.count("/") == base_dir.count("/"))
+        check("Steuerpaket erstellt", "Steuerpaket erstellt" in status, status)
+        check("Paket enthält PDF, 4 CSVs und LIESMICH", all(any(n.startswith(p) for n in exported) for p in ["Steueruebersicht_2026.pdf", "Einnahmen_2026.csv", "Leistungen_2026.csv", "Parkkosten_2026.csv", "Fahrten_2026.csv", "LIESMICH.txt"]), str(exported))
+        check("Belege in das Paket kopiert", len(dbx.copies) == 2 and "Zahlungsnachweise" in status and any(k.endswith("/parkbelege/09/beleg_0.pdf") and "/steuerberater/" in k for k in dbx.files), str(dbx.copies))
+        pdf = next((v[1] for k, v in dbx.files.items() if k.endswith("steueruebersicht_2026.pdf")), b"")
+        check("PDF ist gültig", pdf.startswith(b"%PDF") and len(pdf) > 1500, str(len(pdf)))
+        csvb = next((v[1] for k, v in dbx.files.items() if k.endswith("einnahmen_2026.csv") and "/steuerberater/" in k), b"")
+        csvt = csvb.decode("utf-8-sig")
+        check("CSV für Excel: BOM, Semikolon, Dezimalkomma", csvb.startswith(b"\xef\xbb\xbf") and ";" in csvt and "," in csvt.splitlines()[1])
+        page.click("#v614Export")
+        until(page, lambda: len({k.split("/stand_")[1].split("/")[0] for k in dbx.files if "/stand_" in k}) == 2 and "Steuerpaket erstellt" in page.inner_text("#v614Status"), 15)
+        check("Zweiter Export überschreibt nichts (eigener Ordner)", len({k.split("/stand_")[1].split("/")[0] for k in dbx.files if "/stand_" in k}) == 2)
+        check("Keine JavaScript-Fehler (Steuer)", not errors, "; ".join(errors)[:300])
         ctx.close()
 
         print("4) Update-Pfad vom alten Service Worker (6.11.3) auf die aktuelle Version")

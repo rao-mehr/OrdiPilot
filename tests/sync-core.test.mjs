@@ -105,12 +105,23 @@ test('Tagessicherung vor dem Schreiben; ein Fehler dabei blockiert den Sync nich
   assert.equal(await f.sync(), true);
 });
 
-test('Gleichzeitige Aufrufe laufen nur einmal', async () => {
+test('Aufruf während eines laufenden Syncs: ein Nachlauf, kein paralleler Lauf', async () => {
   const h = harness({ local: st(['a']), cloud: st(['a']) });
   const [x, y] = [h.sync(), h.sync()];
   assert.equal(x, y);
   await x;
-  assert.equal(h.uploads.length, 1);
+  assert.equal(h.uploads.length, 2, 'genau ein Nachlauf');
+  await h.sync();
+  assert.equal(h.uploads.length, 3);
+});
+
+test('Änderung während des Lesens geht nicht verloren', async () => {
+  const h = harness({ local: st(['a']), cloud: st(['a', 'b']) });
+  const p = h.sync();
+  h.state.entries.push({ id: 'während', updatedAt: '2026-10-27' }); // Nutzer tippt, während Dropbox gelesen wird
+  await p;
+  assert.ok(h.state.entries.some((e) => e.id === 'während'), 'lokal erhalten');
+  assert.ok(h.cloud.data.entries.some((e) => e.id === 'während'), 'mit hochgeladen');
 });
 
 test('Einstellungen: leerer neuerer Stand überschreibt keine gefüllten Felder (Fehler vom 13.10.)', () => {
@@ -164,4 +175,11 @@ test('Doppelte Honorarnoten nach Schlüsselmigration werden zusammengefasst', ()
   assert.equal(out.length, 2);
   assert.equal(out.find((x) => x.key === 'k').number, '1');
   assert.equal(out.find((x) => x.key === 'k').signedAt, '2026-10-05');
+});
+
+test('Zahlungen und Fahrten: Wächter erkennt Verlust, erlaubt bewusste Löschung', () => {
+  const remote = { ...st([]), payments: [{ id: 'p1' }], trips: [{ id: 't1' }] };
+  assert.throws(() => C.assertNothingLost(remote, { ...st([]), payments: [], trips: [{ id: 't1' }] }), /PAYMENTS/);
+  assert.throws(() => C.assertNothingLost(remote, { ...st([]), payments: [{ id: 'p1' }], trips: [] }), /TRIPS/);
+  assert.doesNotThrow(() => C.assertNothingLost(remote, { ...st([]), payments: [], deletedPayments: { p1: 'x' }, trips: [], deletedTrips: { t1: 'x' } }));
 });
