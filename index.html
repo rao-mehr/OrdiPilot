@@ -8,10 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=6161">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6161">
+<link rel="manifest" href="manifest.webmanifest?v=6170">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6170">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/ordipilot-v6161-32.png">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6161">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6170">
 <title>OrdiPilot</title>
 <style>
 @font-face{font-family:"Carlito";font-style:normal;font-weight:400;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-400-normal.woff2") format("woff2")}
@@ -1168,7 +1168,7 @@ setupV67();
 
   // UI copy and version.
   const help=document.querySelector('#panel-entries .v6-page-sub');if(help)help.textContent='Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
-  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.16.1')});
+  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.17.0')});
   applyRecipientToLegacy(state.settings.activeRecipientId,false);if(window.setRecipientName){setRecipientName.value=state.settings.recipientName||'';setRecipientQualification.value=state.settings.recipientQualification||'';setRecipientAddress.value=state.settings.recipientAddress||'';setRecipientEmail.value=state.settings.recipientEmail||''}
   invNumber.value=invoiceRecord()?.number||defaultInvoiceNumber(invYear.value,invMonth.value);
   renderRecipientManager();renderEntries();renderParking();renderInvoice();saveState(false);
@@ -1181,7 +1181,7 @@ setupV67();
 /* OrdiPilot V6.12 · Empfängerspezifische Honorarnoten-Texte (vormals v6113-hotfix.js, jetzt fest eingebaut). */
 (function(){
   'use strict';
-  const VERSION='6.16.1';
+  const VERSION='6.17.0';
   const DEFAULT_ROLE='Ordinationsinhaberin';
   const DEFAULT_SERVICE='Ärztliche Vertretungstätigkeit';
 
@@ -2489,6 +2489,106 @@ setupV67();
   refreshAll=function(){const out=baseRefresh.apply(this,arguments);try{monthEndBanner();guide()}catch(e){console.warn('V6.16',e)}return out};
   css();logo();try{monthEndBanner();guide();renderEntries()}catch(e){console.warn('V6.16',e)}
   window.ordipilotV616={applyGeo,importGeo,importProofs,monthEndBanner};
+})();
+
+</script>
+<script id="v617-send">
+/* ===== OrdiPilot V6.17 · Honorarnote ohne Signatur: erstellen, ablegen, senden – ein Tipp =====
+   Pro Rechnungsempfänger einstellbar: „Signatur mit ID Austria erforderlich“ (Standard: nein).
+   Ohne Signatur: Knopf „Erstellen & senden“ → PDF erzeugen (falls nötig/veraltet) → in Dropbox ablegen
+   → Mail per Kurzbefehl bzw. Teilen-Dialog. Nach dem Versand ist der Monat abgerechnet (gesperrt). */
+(function(){
+  'use strict';
+  if(typeof document==='undefined'||typeof state==='undefined')return;
+  const esc=v=>escapeHtml(v);
+  const recipient=()=>{const arr=state.settings.recipients||[];return arr.find(r=>r.id===state.settings.activeRecipientId)||arr[0]||{}};
+  const needsSignature=()=>!!recipient().requiresSignature;
+  let busy=false;
+  // Die Erstell-Funktion aus V6.11 ist nicht global – beim Laden vom Knopf übernehmen
+  const createInvoice=(window.makePdf&&typeof makePdf.onclick==='function')?makePdf.onclick:null;
+
+  async function ensureCreated(){
+    let rec=invoiceRecord();
+    if(!rec?.createdAt||invoiceIsStaleV63(rec)){
+      if(rec?.mailOpenedAt){alert('Diese Honorarnote wurde bereits versendet. Für Änderungen bitte „Korrektur anlegen“.');return null}
+      if(!createInvoice){alert('Erstellen nicht verfügbar.');return null}await createInvoice();rec=invoiceRecord();
+      if(!rec?.createdAt||invoiceIsStaleV63(rec))return null;
+    }
+    return rec;
+  }
+  async function sendDirect(){
+    if(busy)return;busy=true;
+    try{
+      let rec=invoiceRecord();
+      if(rec?.mailOpenedAt&&!confirm(`Diese Honorarnote wurde am ${dateAT(String(rec.mailOpenedAt).slice(0,10))} bereits versendet. Erneut senden?`))return;
+      rec=await ensureCreated();if(!rec)return;
+      const blob=await getInvoiceBlob(`draft:${rec.key}`);
+      if(!blob){alert('Die PDF ist auf diesem Gerät nicht mehr vorhanden. Bitte Honorarnote erneut erstellen.');return}
+      // In Dropbox ablegen (falls beim Erstellen offline)
+      let path=rec.dropboxPath;
+      if(isDropboxConnected()&&!path){try{path=`/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten/${rec.year}/${rec.filename||invoiceFilename()}`;await dbxUpload(path,blob);upsertInvoiceRecord({key:rec.key,dropboxPath:path,unsignedDropboxPath:path})}catch(e){console.warn(e);path=''}}
+      upsertInvoiceRecord({key:rec.key,confirmedAt:rec.confirmedAt||nowISO(),finalizedAt:nowISO(),signatureRequired:false});
+      const r=recipient(),[y,m]=[rec.year,rec.month],to=r.email||state.settings.recipientEmail||'';
+      const subject=`Honorarnote ${MONTHS[Number(m)-1]} ${y} – ${state.settings.issuerName||'Vertretung'}`;
+      const body=`${r.salutation||'Guten Tag,'}\n\nanbei übermittle ich meine Honorarnote ${rec.number||''} für ${r.serviceDescription||'ärztliche Vertretungstätigkeit'} im ${MONTHS[Number(m)-1]} ${y}.\n\nMit freundlichen Grüßen\n${r.signoffName||state.settings.issuerName||''}`;
+      const file=new File([blob],rec.filename||invoiceFilename(),{type:'application/pdf'});
+      const shortcut=(state.settings.invoiceMailShortcut||'').trim();
+      const done=()=>{upsertInvoiceRecord({key:rec.key,mailOpenedAt:nowISO()});renderInvoice();try{refreshAll(false)}catch(_){}};
+      // 1. iPhone-Kurzbefehl: Mail mit Anhang direkt aus Dropbox
+      if(isIOSDevice()&&shortcut&&path&&isDropboxConnected()){
+        try{const fileUrl=await dropboxTemporaryLink(path);done();window.location.href=`shortcuts://run-shortcut?name=${encodeURIComponent(shortcut)}&input=text&text=${encodeURIComponent(JSON.stringify({to,subject,body,fileUrl,fileName:file.name,invoiceKey:rec.key}))}`;return}catch(e){console.warn(e)}
+      }
+      // 2. Teilen-Dialog (Mail, mit Anhang)
+      if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
+        try{await navigator.share({files:[file],title:subject,text:to?`An: ${to}\n\n${body}`:body});done();return}catch(e){if(e?.name==='AbortError')return}
+      }
+      // 3. Fallback: herunterladen + Mailprogramm
+      await downloadBlob(blob,file.name);done();
+      window.location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body+'\n\n(PDF wurde heruntergeladen und kann angehängt werden.)')}`;
+    }catch(e){console.error(e);alert('Senden fehlgeschlagen. Die Honorarnote ist gespeichert – bitte erneut versuchen.')}
+    finally{busy=false;try{render()}catch(_){}}
+  }
+
+  function css(){
+    if(document.getElementById('v617-style'))return;const st=document.createElement('style');st.id='v617-style';
+    st.textContent=`.v617-toggle{display:flex;align-items:center;gap:10px;margin:10px 2px 0;font-size:13px;color:#6b7280;font-weight:600}
+.v617-toggle input{width:18px;height:18px;min-height:auto}
+.v617-sent{margin-top:10px;padding:10px 12px;border-radius:12px;background:#edf8ef;color:#1f7a3d;font-size:13px;font-weight:650}`;
+    document.head.appendChild(st);
+  }
+  function render(){
+    css();
+    const make=document.getElementById('makePdf');if(!make)return;
+    const sig=needsSignature(),rec=invoiceRecord();
+    // Schalter je Empfänger
+    let tg=document.getElementById('v617Toggle');
+    if(!tg){tg=document.createElement('label');tg.id='v617Toggle';tg.className='v617-toggle';make.insertAdjacentElement('afterend',tg);
+      tg.addEventListener('change',ev=>{const r=recipient();r.requiresSignature=!!ev.target.checked;state.settings._updatedAt=nowISO();saveState();renderInvoice()})}
+    tg.innerHTML=`<input type="checkbox" ${sig?'checked':''}> ${esc(recipient().name||'Empfänger')} verlangt eine Signatur mit ID Austria`;
+    let sent=document.getElementById('v617Sent');
+    if(!sig){
+      make.textContent=rec?.mailOpenedAt?'Erneut senden':'Honorarnote erstellen & senden';
+      make.onclick=sendDirect;
+      for(const id of ['invoiceStepSigned','invoiceStepDropbox','invoiceStartSign','invoiceSignedLabel','invoiceArchiveSigned']){const el=document.getElementById(id);if(el)el.style.display='none'}
+      const mailName=document.querySelector('#invoiceStepMail .invoice-step-name');if(mailName)mailName.textContent='Per E-Mail gesendet';
+      const mailSub=document.getElementById('invoiceStepMailSub');if(mailSub)mailSub.textContent=rec?.mailOpenedAt?`am ${dateAT(String(rec.mailOpenedAt).slice(0,10))}`:'Mit „Erstellen & senden“ in einem Schritt';
+      const mailSt=document.getElementById('invoiceStepMailStatus');if(mailSt){mailSt.textContent=rec?.mailOpenedAt?'gesendet ✓':'offen';mailSt.className='doc-status-pill'+(rec?.mailOpenedAt?' ok':'')}
+      const dot=document.querySelector('#invoiceStepMail .invoice-step-dot');if(dot)dot.textContent='2';
+      if(window.invoiceSendMail){invoiceSendMail.onclick=sendDirect;invoiceSendMail.textContent=rec?.mailOpenedAt?'Erneut senden':'Senden'}
+      if(rec?.mailOpenedAt){if(!sent){sent=document.createElement('div');sent.id='v617Sent';sent.className='v617-sent';tg.insertAdjacentElement('afterend',sent)}sent.textContent=`Versendet am ${dateAT(String(rec.mailOpenedAt).slice(0,10))} · abgelegt in Dropbox unter Honorarnoten/${rec.year}`}
+      else if(sent)sent.remove();
+    }else{
+      make.textContent='Honorarnote erstellen';make.onclick=createInvoice;
+      for(const id of ['invoiceStepSigned','invoiceStepDropbox','invoiceStartSign','invoiceSignedLabel']){const el=document.getElementById(id);if(el)el.style.display=''}
+      const dot=document.querySelector('#invoiceStepMail .invoice-step-dot');if(dot)dot.textContent='4';
+      if(window.invoiceSendMail){invoiceSendMail.onclick=shareSignedInvoice;invoiceSendMail.textContent='E-Mail senden'}
+      if(sent)sent.remove();
+    }
+  }
+  const base=renderInvoice;
+  renderInvoice=function(){const out=base.apply(this,arguments);try{render()}catch(e){console.warn('V6.17',e)}return out};
+  window.ordipilotSendInvoice=sendDirect;
+  try{render()}catch(e){console.warn('V6.17',e)}
 })();
 
 </script>

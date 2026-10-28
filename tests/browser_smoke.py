@@ -440,6 +440,31 @@ def main():
         check("Keine JavaScript-Fehler (Automatik)", not errors, "; ".join(errors)[:300])
         ctx.close()
 
+        print("9) Honorarnote ohne Signatur: erstellen, ablegen, senden")
+        dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
+        local = json.loads(json.dumps(cloud)); local["settings"] = dict(backup["settings"], issuerQualification="Facharzt", recipients=[{"id": "recipient-primary", "name": "Dr. med. Erika Muster", "address": "Ordinationsweg 2\n2100 Korneuburg", "email": "praxis@example.org", "salutation": "Sehr geehrte Frau Dr. Muster,", "signoffName": "Dr. Test Arzt"}], activeRecipientId="recipient-primary", _updatedAt="2026-10-20T00:00:00Z")
+        for e in local["entries"]:
+            e["recipientId"] = "recipient-primary"
+        ctx, page, errors = new_page(browser, base, dbx, local)
+        page.evaluate("()=>{window.__shared=null;navigator.canShare=()=>true;navigator.share=async d=>{window.__shared=d.files.map(f=>f.name)}}")
+        page.on("dialog", lambda d: d.accept())
+        page.evaluate("()=>{document.querySelector('[data-tab=invoice]').click();invYear.value='2026';invMonth.value='03';invMonth.dispatchEvent(new Event('change'));renderInvoice()}")
+        label = page.inner_text("#makePdf")
+        check("Ohne Signatur: ein Knopf „erstellen & senden“", "senden" in label.lower() and not page.is_visible("#invoiceStartSign"), label)
+        page.click("#makePdf")
+        until(page, lambda: page.evaluate("()=>!!window.__shared"), 20)
+        rec = page.evaluate("()=>invoiceRecord()")
+        shared = page.evaluate("()=>window.__shared")
+        stored = [k for k in dbx.files if "/honorarnoten/2026/" in k]
+        check("PDF erstellt und im Mail-/Teilen-Dialog angehängt", bool(shared) and shared[0].endswith(".pdf"), str(shared))
+        check("Automatisch in Dropbox abgelegt (Honorarnoten/2026)", len(stored) == 1 and dbx.files[stored[0]][1].startswith(b"%PDF"), str(stored))
+        check("Als versendet markiert, Monat abgerechnet", bool(rec and rec.get("mailOpenedAt")) and page.evaluate("()=>ordipilotRecipientMonthLocked('2026-03','recipient-primary')"))
+        check("Anzeige „Versendet am …“", page.locator("#v617Sent").count() == 1)
+        page.evaluate("()=>{document.querySelector('#v617Toggle input').click()}")
+        check("Signatur je Empfänger wieder einschaltbar", page.is_visible("#invoiceStartSign") and page.evaluate("()=>state.settings.recipients[0].requiresSignature===true"))
+        check("Keine JavaScript-Fehler (Senden)", not errors, "; ".join(errors)[:300])
+        ctx.close()
+
         print("4) Update-Pfad vom alten Service Worker (6.11.3) auf die aktuelle Version")
         tmp = tempfile.mkdtemp()
         old = os.path.join(tmp, "app"); os.makedirs(old)
