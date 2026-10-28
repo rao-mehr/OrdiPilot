@@ -471,6 +471,46 @@ def main():
         check("Keine JavaScript-Fehler (Senden)", not errors, "; ".join(errors)[:300])
         ctx.close()
 
+        print("10) Versand direkt über Gmail (Apps-Script-Web-App)")
+        dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
+        local = json.loads(json.dumps(cloud)); local["settings"] = dict(backup["settings"], issuerQualification="Facharzt", recipients=[{"id": "recipient-primary", "name": "Dr. med. Erika Muster", "address": "Ordinationsweg 2\n2100 Korneuburg", "email": "praxis@example.org", "salutation": "Sehr geehrte Frau Dr. Muster,", "signoffName": "Dr. Test Arzt"}], activeRecipientId="recipient-primary", _updatedAt="2026-10-20T00:00:00Z")
+        for e in local["entries"]:
+            e["recipientId"] = "recipient-primary"
+        ctx, page, errors = new_page(browser, base, dbx, local)
+        calls = []; gmail_fail = {"on": False}
+        def webapp(route, request):
+            d = json.loads(request.post_data or "{}"); calls.append(d)
+            if d.get("token") != "geheim": body = {"ok": False, "error": "Schlüssel ungültig"}
+            elif d.get("action") == "ping": body = {"ok": True, "account": "arzt@example.org"}
+            elif gmail_fail["on"]: body = {"ok": False, "error": "Tageslimit erreicht"}
+            else: body = {"ok": True, "sentAt": "2026-10-28T19:30:00.000Z", "to": d.get("to")}
+            route.fulfill(status=200, headers={"content-type": "application/json", "access-control-allow-origin": "*"}, body=json.dumps(body))
+        ctx.route("https://script.google.com/**", webapp)
+        page.evaluate("()=>{window.__shared=null;navigator.canShare=()=>true;navigator.share=async d=>{window.__shared=d.files.map(f=>f.name)}}")
+        page.on("dialog", lambda d: d.accept())
+        page.evaluate("()=>{document.querySelector('[data-tab=invoice]').click();invYear.value='2026';invMonth.value='04';invMonth.dispatchEvent(new Event('change'));renderInvoice()}")
+        page.evaluate("()=>document.getElementById('v618Gmail').open=true")
+        page.fill("#v618Url", "https://script.google.com/macros/s/TEST/exec"); page.locator("#v618Url").dispatch_event("change")
+        page.fill("#v618Token", "geheim"); page.locator("#v618Token").dispatch_event("change")
+        page.click("#v618Test")
+        until(page, lambda: "Verbunden" in page.inner_text("#v618TestResult"), 10)
+        check("Gmail-Versand: Verbindung testen", "arzt@example.org" in page.inner_text("#v618TestResult"))
+        page.click("#makePdf")
+        until(page, lambda: bool((page.evaluate("()=>invoiceRecord()") or {}).get("mailOpenedAt")), 20)
+        rec = page.evaluate("()=>invoiceRecord()")
+        send = next((c for c in calls if c.get("action") == "send"), {})
+        check("Gmail-Versand: Mail mit Pfad, Empfänger und Betreff an die Web-App", send.get("to") == "praxis@example.org" and send.get("path", "").endswith(".pdf") and "/Honorarnoten/2026/" in send.get("path", "") and "April 2026" in send.get("subject", ""), str(send)[:250])
+        check("Gmail-Versand: sofort als gesendet markiert, ohne Teilen-Dialog", rec.get("mailSentVia") == "gmail" and page.evaluate("()=>window.__shared") is None)
+        check("Gmail-Versand: PDF liegt in Dropbox, bevor gesendet wird", any(k.endswith(".pdf") and "/honorarnoten/2026/" in k for k in dbx.files))
+        # Fehlerfall → Rückfall auf Teilen
+        page.evaluate("()=>ordipilotResetSent()")
+        gmail_fail["on"] = True
+        page.click("#makePdf")
+        until(page, lambda: page.evaluate("()=>!!window.__shared"), 20)
+        check("Gmail-Fehler: verständliche Meldung und Rückfall auf Teilen", bool(page.evaluate("()=>window.__shared")))
+        check("Keine JavaScript-Fehler (Gmail-Versand)", not errors, "; ".join(errors)[:300])
+        ctx.close()
+
         print("4) Update-Pfad vom alten Service Worker (6.11.3) auf die aktuelle Version")
         tmp = tempfile.mkdtemp()
         old = os.path.join(tmp, "app"); os.makedirs(old)
