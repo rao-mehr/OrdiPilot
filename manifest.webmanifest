@@ -3,20 +3,20 @@
   "name": "OrdiPilot",
   "short_name": "OrdiPilot",
   "description": "Einsatzplanung, Kalender, Parken, Honorar und Einstellungen",
-  "start_url": "./index.html?v=6160",
+  "start_url": "./index.html?v=6161",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f7fb",
   "theme_color": "#2f73f2",
   "icons": [
     {
-      "src": "icons/ordipilot-v616-192.png",
+      "src": "icons/ordipilot-v6161-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/ordipilot-v616-512.png",
+      "src": "icons/ordipilot-v6161-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

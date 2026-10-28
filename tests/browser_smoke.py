@@ -218,6 +218,19 @@ def main():
         check("Empfänger-Adresse repariert", r0.get("address") == backup["settings"].get("recipientAddress"))
         check(f"Tagessicherung backup_{today}.json angelegt", dbx.get(f"{SYSTEM}/backup_{today}.json") is not None)
         check("Sicherung enthält den Cloud-Stand vor dem Schreiben", (dbx.get(f"{SYSTEM}/backup_{today}.json") or {}).get("settings", {}).get("iban", "") == cloud["settings"].get("iban", ""))
+        icon_check = page.evaluate("""async()=>{
+          const m=await (await fetch('manifest.webmanifest')).json();
+          const srcs=[...m.icons.map(i=>i.src),...[...document.querySelectorAll('link[rel*=icon]')].map(l=>l.getAttribute('href'))];
+          const out=[];
+          for(const src of srcs){
+            const img=new Image();img.src=src;try{await img.decode()}catch(e){out.push(src+': lädt nicht');continue}
+            const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.drawImage(img,0,0,64,64);
+            const d=x.getImageData(0,0,64,64).data;let blue=0,white=0;
+            for(let i=0;i<d.length;i+=4){if(d[i+2]>200&&d[i]<120)blue++;if(d[i]>240&&d[i+1]>240&&d[i+2]>240)white++}
+            if(blue<64*64*0.4||white<20)out.push(src+': blau '+blue+', weiß '+white);
+          }
+          return out}""")
+        check("App-Icons sind nicht leer (blau mit weißem Logo)", icon_check == [], str(icon_check))
         check(f"Version {VERSION} sichtbar", page.evaluate("()=>[...document.querySelectorAll('.footer-note')].some(e=>/"+VERSION_RE+"/.test(e.textContent))"))
         check("Kein Hotfix-Skript eingeschleust", page.evaluate("()=>!document.querySelector('script[src*=v6113]')"))
         check("Keine JavaScript-Fehler", not errors, "; ".join(errors)[:300])

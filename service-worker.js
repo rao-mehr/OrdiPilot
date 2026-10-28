@@ -1,13 +1,13 @@
 /* OrdiPilot Service Worker · V6.16
    Seit V6.12 enthält index.html alle Korrekturen selbst. Der Service Worker verändert
    die Seite nicht mehr (früher wurde v6113-hotfix.js zur Laufzeit eingeschleust). */
-const CACHE="ordipilot-v6-16-0";
+const CACHE="ordipilot-v6-16-1";
 const STATIC=[
   "./index.html",
   "./manifest.webmanifest",
-  "./icons/ordipilot-v616-180.png",
-  "./icons/ordipilot-v616-192.png",
-  "./icons/ordipilot-v616-512.png"
+  "./icons/ordipilot-v6161-180.png",
+  "./icons/ordipilot-v6161-192.png",
+  "./icons/ordipilot-v6161-512.png"
 ];
 
 self.addEventListener("install",event=>{

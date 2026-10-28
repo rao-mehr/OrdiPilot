@@ -8,10 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=6160">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v616-180.png?v=6160">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/ordipilot-v616-32.png">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v616-180.png?v=6160">
+<link rel="manifest" href="manifest.webmanifest?v=6161">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6161">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/ordipilot-v6161-32.png">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6161">
 <title>OrdiPilot</title>
 <style>
 @font-face{font-family:"Carlito";font-style:normal;font-weight:400;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-400-normal.woff2") format("woff2")}
@@ -1168,7 +1168,7 @@ setupV67();
 
   // UI copy and version.
   const help=document.querySelector('#panel-entries .v6-page-sub');if(help)help.textContent='Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
-  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.16.0')});
+  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.16.1')});
   applyRecipientToLegacy(state.settings.activeRecipientId,false);if(window.setRecipientName){setRecipientName.value=state.settings.recipientName||'';setRecipientQualification.value=state.settings.recipientQualification||'';setRecipientAddress.value=state.settings.recipientAddress||'';setRecipientEmail.value=state.settings.recipientEmail||''}
   invNumber.value=invoiceRecord()?.number||defaultInvoiceNumber(invYear.value,invMonth.value);
   renderRecipientManager();renderEntries();renderParking();renderInvoice();saveState(false);
@@ -1181,7 +1181,7 @@ setupV67();
 /* OrdiPilot V6.12 · Empfängerspezifische Honorarnoten-Texte (vormals v6113-hotfix.js, jetzt fest eingebaut). */
 (function(){
   'use strict';
-  const VERSION='6.16.0';
+  const VERSION='6.16.1';
   const DEFAULT_ROLE='Ordinationsinhaberin';
   const DEFAULT_SERVICE='Ärztliche Vertretungstätigkeit';
 
