@@ -460,6 +460,12 @@ def main():
         check("Automatisch in Dropbox abgelegt (Honorarnoten/2026)", len(stored) == 1 and dbx.files[stored[0]][1].startswith(b"%PDF"), str(stored))
         check("Als versendet markiert, Monat abgerechnet", bool(rec and rec.get("mailOpenedAt")) and page.evaluate("()=>ordipilotRecipientMonthLocked('2026-03','recipient-primary')"))
         check("Anzeige „Versendet am …“", page.locator("#v617Sent").count() == 1)
+        page.click("#v617Reset")
+        check("„Doch nicht gesendet“ entsperrt den Monat, Nummer bleibt", page.evaluate("()=>!invoiceRecord().mailOpenedAt&&!ordipilotRecipientMonthLocked('2026-03','recipient-primary')&&invoiceRecord().number===%s" % json.dumps(rec.get("number"))))
+        # Kurzbefehl: erst nach Rückfrage als gesendet
+        page.evaluate("()=>{localStorage.setItem('ordipilot-v617-pending-send',JSON.stringify({key:invoiceRecord().key,number:'X',at:Date.now()-5000}))}")
+        page.evaluate("()=>ordipilotAskPendingSend()")
+        check("Nach Rückkehr vom Kurzbefehl: Rückfrage, dann als gesendet markiert", page.evaluate("()=>!!invoiceRecord().mailOpenedAt"))
         page.evaluate("()=>{document.querySelector('#v617Toggle input').click()}")
         check("Signatur je Empfänger wieder einschaltbar", page.is_visible("#invoiceStartSign") and page.evaluate("()=>state.settings.recipients[0].requiresSignature===true"))
         check("Keine JavaScript-Fehler (Senden)", not errors, "; ".join(errors)[:300])
