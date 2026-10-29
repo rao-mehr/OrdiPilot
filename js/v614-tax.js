@@ -629,6 +629,7 @@
       ${
         s.expensesEnabled
           ? `<details ${openSections.has('v614Exp') ? 'open' : ''} id="v614Exp"><summary>Weitere Betriebsausgaben <span>${rep.expenses.length} · ${eur(t.other)}</span></summary>
+        ${typeof window.ordipilotExpenseExtra === 'function' ? window.ordipilotExpenseExtra(rep, year) : ''}
         <div class="v614-settings">
           <div class="v614-form" style="padding-top:0">
             <label>Datum<input type="date" id="v616ExpDate" value="${todayISO().startsWith(year) ? todayISO() : year + '-12-31'}"></label>

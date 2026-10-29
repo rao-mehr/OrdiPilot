@@ -1,12 +1,12 @@
-/* OrdiPilot Service Worker · V7.0.1
+/* OrdiPilot Service Worker · V7.1
    Seit V6.12 enthält die App alle Korrekturen selbst (seit dem Umbau in css/ und js/). Der Service Worker verändert
    die Seite nicht mehr (früher wurde v6113-hotfix.js zur Laufzeit eingeschleust). */
-const CACHE="ordipilot-v7-0-1";
-const V="701"; // = ?v= in index.html
+const CACHE="ordipilot-v7-1-0";
+const V="710"; // = ?v= in index.html
 const FILES=[
   "css/base.css","css/v68.css","css/v611.css",
   "js/boot.js","js/app.js","js/v68.js","js/v69.js","js/v6103-parking-fix.js","js/v611.js","js/v6102-calendar-batch-fix.js",
-  "js/v612-recipients.js","js/v612-sync-core.js","js/v614-tax.js","js/v615-ui.js","js/v616-auto.js","js/v617-send.js","js/v619-reserve.js","js/main.js"
+  "js/v612-recipients.js","js/v612-sync-core.js","js/v614-tax.js","js/v615-ui.js","js/v616-auto.js","js/v617-send.js","js/v619-reserve.js","js/v710-ki-erinnerung.js","js/main.js"
 ];
 const STATIC=[
   "./index.html",
