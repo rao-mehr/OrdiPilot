@@ -31,6 +31,16 @@ test('Status: frisch → ok; einzelne Automatik alt → Problem; Datei alt → �
   assert.equal(W.evaluateStatus(null, NOW).known, false);
 });
 
+test('Status: noch nie gelaufen → erst „keine Meldung“, nach Ablauf der Frist ein Problem', () => {
+  const st = { updatedAt: '2026-11-03T16:06:00Z', components: [{ key: 'check', label: 'Prüfung', last: '' }] };
+  const fresh = W.evaluateStatus(st, NOW, { check: '2026-11-03T00:00:00Z' });
+  assert.deepEqual(plain(fresh.items.map(i => [i.ok, i.pending])), [[true, true]]);
+  assert.equal(fresh.ok, true);
+  assert.equal(W.evaluateStatus(st, NOW, {}).ok, true, 'gerade erst gesehen');
+  const late = W.evaluateStatus(st, NOW, { check: '2026-11-01T00:00:00Z' });
+  assert.deepEqual(plain(late.items.map(i => [i.ok, i.pending])), [[false, false]]);
+});
+
 test('George-JSON: Betrag mit Genauigkeit, nur Gutschriften', () => {
   const txt = JSON.stringify([
     {
