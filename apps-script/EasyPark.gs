@@ -107,6 +107,8 @@ function processEasyParkQueryUnlocked_(query) {
   }
 
   console.log(`EasyPark: ${changed ? 'Import aktualisiert' : 'keine neuen Parkvorgänge'}.`);
+  // Lebenszeichen für die OrdiPilot-Überwachung (OrdiPilot_Automatik.gs)
+  if (typeof opBeat_ === 'function') opBeat_('easypark');
 }
 
 function parseParkingConfirmation_(msg, plain, html) {

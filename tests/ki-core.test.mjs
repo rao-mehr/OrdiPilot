@@ -12,7 +12,14 @@ const K = sb.OrdiPilotKiCore;
 const plain = v => JSON.parse(JSON.stringify(v));
 const exp = {
   records: [
-    { id: 'openai-ABC123', date: '2026-09-03', provider: 'OpenAI / ChatGPT', number: 'ABC123', gross: 23.0 },
+    {
+      id: 'openai-ABC123',
+      date: '2026-09-03',
+      provider: 'OpenAI / ChatGPT',
+      number: 'ABC123',
+      gross: 23.0,
+      file: '/Finanzen & Steuern/OpenAI/a.pdf',
+    },
     { id: 'anthropic-2358', date: '2026-10-01', provider: 'Anthropic / Claude', number: '2358', gross: 21.6 },
     { id: 'kaputt', date: '3.10.2026', gross: 5 },
     { id: 'null', date: '2026-10-02', gross: 0 },
@@ -31,9 +38,11 @@ test('Neue Belege werden mit Standardanteil übernommen, ungültige ignoriert', 
     note: 'OpenAI / ChatGPT · ABC123',
     amount: 23,
     share: 50,
+    receipt: '/Finanzen & Steuern/OpenAI/a.pdf',
     source: 'ki',
     updatedAt: 'T',
   });
+  assert.equal(r.expenses[2].receipt, '', 'ohne Dateipfad bleibt der Beleg leer');
 });
 
 test('Wiederholter Import: keine Duplikate, keine Änderung ohne Grund', () => {
@@ -68,4 +77,11 @@ test('Anteil ändern betrifft nur automatische Belege ohne Handänderung', () =>
   assert.deepEqual(plain(r.expenses.map(x => x.share)), [70, 80, 100]);
   assert.equal(K.clampShare('150'), 100);
   assert.equal(K.clampShare('abc'), K.DEFAULT_SHARE);
+});
+
+test('Belege aus V7.1 (ohne Pfad) bekommen den Dropbox-Pfad nachgetragen', () => {
+  const old = K.mergeKiExpenses({ records: exp.records.map(r => ({ ...r, file: undefined })) }, { share: 50, expenses: [] });
+  const r = K.mergeKiExpenses(exp, { share: 50, expenses: old.expenses });
+  assert.equal(r.updated, 1);
+  assert.equal(r.expenses.find(x => x.id === 'ki-openai-ABC123').receipt, '/Finanzen & Steuern/OpenAI/a.pdf');
 });

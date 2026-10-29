@@ -1043,11 +1043,15 @@
     need(80);
     text(L, 'Belege und Details', 12, bold);
     y -= 16;
+    const hasKi = rep.expenses.some(x => x.source === 'ki');
     for (const l of [
-      `Einnahmen_${rep.year}.csv, Leistungen_${rep.year}.csv, Parkkosten_${rep.year}.csv, Fahrten_${rep.year}.csv`,
-      'Honorarnoten, Parkbelege und Zahlungsnachweise als PDF in den Unterordnern dieses Steuerpakets.',
+      `Einnahmen_${rep.year}.csv, Leistungen_${rep.year}.csv, Parkkosten_${rep.year}.csv, Fahrten_${rep.year}.csv` +
+        (rep.expenses.length ? `, Weitere_Ausgaben_${rep.year}.csv` : ''),
+      `Honorarnoten, Parkbelege, Zahlungsnachweise${hasKi ? ' und KI-Belege' : ''} als PDF in den Unterordnern dieses Steuerpakets.`,
       'Fahrten: Wohnung – Ordination – Wohnung bzw. Arbeitsplatz – Ordination – Wohnung (tatsächliche Strecke), Kilometergeld lt. obigem Satz.',
-      'Vorläufige Aufstellung ohne weitere Betriebsausgaben; steuerliche Beurteilung durch den Steuerberater.',
+      rep.expenses.length
+        ? 'Vorläufige Aufstellung; betriebliche Anteile gemischt genutzter Ausgaben und steuerliche Beurteilung durch den Steuerberater.'
+        : 'Vorläufige Aufstellung ohne weitere Betriebsausgaben; steuerliche Beurteilung durch den Steuerberater.',
     ]) {
       need(13);
       text(L, l, 9, reg, grey);
@@ -1116,7 +1120,42 @@
           }
         }
       }
-      const readme = `Steuerpaket ${rep.year} – erstellt mit OrdiPilot am ${dateAT(todayISO())}\r\n\r\nSteueruebersicht_${rep.year}.pdf – Zusammenfassung\r\nEinnahmen_${rep.year}.csv – Zahlungseingänge (Zuflussprinzip)\r\nLeistungen_${rep.year}.csv – erbrachte Leistungen und offene Posten\r\nParkkosten_${rep.year}.csv – Parkbelege\r\nFahrten_${rep.year}.csv – Fahrten mit Kilometergeld\r\nHonorarnoten/, Parkbelege/, Zahlungsnachweise/ – Belege als PDF\r\n\r\nCSV-Dateien: Semikolon-getrennt, öffnen in Excel per Doppelklick.\r\n`;
+      // KI-Belege liegen einzeln unter „Finanzen & Steuern“ – nur die des Jahres kopieren
+      const kiFiles = [
+        ...new Set(rep.expenses.filter(x => x.source === 'ki' && /^\//.test(x.receipt || '')).map(x => x.receipt)),
+      ];
+      let kiCopied = 0;
+      for (const [i, src] of kiFiles.entries()) {
+        setStatus(`Kopiere KI-Belege … ${i + 1} von ${kiFiles.length}`);
+        try {
+          await dbxRpc('files/copy_v2', {
+            from_path: src,
+            to_path: `${base}/KI-Belege/${src.split('/').pop()}`,
+            autorename: true,
+            allow_ownership_transfer: false,
+          });
+          kiCopied++;
+        } catch (e) {
+          console.warn('KI-Beleg', src, e);
+        }
+      }
+      if (kiFiles.length > kiCopied) notes.push(`${kiFiles.length - kiCopied} KI-Belege nicht gefunden`);
+      const readme = [
+        `Steuerpaket ${rep.year} – erstellt mit OrdiPilot am ${dateAT(todayISO())}`,
+        '',
+        `Steueruebersicht_${rep.year}.pdf – Zusammenfassung`,
+        `Einnahmen_${rep.year}.csv – Zahlungseingänge (Zuflussprinzip)`,
+        `Leistungen_${rep.year}.csv – erbrachte Leistungen und offene Posten`,
+        `Parkkosten_${rep.year}.csv – Parkbelege`,
+        `Fahrten_${rep.year}.csv – Fahrten mit Kilometergeld`,
+        ...(rep.expenses.length
+          ? [`Weitere_Ausgaben_${rep.year}.csv – weitere Betriebsausgaben mit betrieblichem Anteil`]
+          : []),
+        `Honorarnoten/, Parkbelege/, Zahlungsnachweise/${kiCopied ? ', KI-Belege/' : ''} – Belege als PDF`,
+        '',
+        'CSV-Dateien: Semikolon-getrennt, öffnen in Excel per Doppelklick.',
+        '',
+      ].join('\r\n');
       await dbxUpload(`${base}/LIESMICH.txt`, new Blob(['﻿' + readme], { type: 'text/plain;charset=utf-8' }));
       state.settings.lastTaxExport = { year: rep.year, path: base, at: now() };
       touchSettings();

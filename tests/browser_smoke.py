@@ -10,6 +10,7 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM = "/Ordination & Selbständigkeit/Vertretungsdienste/System"
 DATA = SYSTEM + "/daten.json"
+ROOT_DBX = "/Ordination & Selbständigkeit/Vertretungsdienste"
 _m = re.search(r"ordipilot-v(\d+)-(\d+)-(\d+)", open(os.path.join(ROOT, "service-worker.js")).read())
 VERSION, CACHE_NAME = ".".join(_m.groups()), _m.group(0)
 VERSION_RE = VERSION.replace(".", "\\.")
@@ -107,6 +108,10 @@ class FakeDropbox:
             return js(200, {"entries": entries, "has_more": False})
         if endpoint == "files/copy_v2":
             a = json.loads(body); src = a["from_path"].lower().rstrip("/") + "/"; dst = a["to_path"]
+            single = self.files.get(a["from_path"].lower())
+            if single:  # einzelne Datei
+                self.put(dst, single[1]); self.copies.append((a["from_path"], dst))
+                return js(200, {"metadata": {".tag": "file", "path_display": dst}})
             items = [(k, v) for k, v in list(self.files.items()) if k.startswith(src)]
             if not items:
                 return js(409, {"error_summary": "from_lookup/not_found/"})
@@ -603,6 +608,54 @@ def main():
         st = dbx.get(DATA)["settings"]
         check("Erinnerungs-Einstellungen in Dropbox (fürs Google-Skript)", st.get("reminderPaymentDays") == 30 and st.get("reminderMail", True) is not False, str({k: st.get(k) for k in ["reminderMail", "reminderPaymentDays"]}))
         check("Keine JavaScript-Fehler (KI/Erinnerungen)", not errors, "; ".join(errors)[:300])
+        ctx.close()
+
+        print("15) Automatik-Status, Zahlungseingänge aus Kontoumsätzen, KI-Belege im Steuerpaket")
+        nowz = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
+        dbx.put(SYSTEM + "/Import/automatik-status.json", json.dumps({"version": 1, "updatedAt": nowz, "components": [
+            {"key": "ki", "label": "KI-Ausgaben-Automatik", "last": nowz}, {"key": "easypark", "label": "EasyPark-Import", "last": nowz},
+            {"key": "check", "label": "Tägliche Prüfung (18 Uhr)", "last": nowz}]}).encode())
+        KI_DIR = "/Finanzen & Steuern/Ausgaben/Software & Abos/OpenAI"
+        dbx.put(KI_DIR + "/a.pdf", b"%PDF-a"); dbx.put(KI_DIR + "/b.pdf", b"%PDF-b")
+        dbx.put(SYSTEM + "/Import/ki-ausgaben.json", json.dumps({"version": 2, "records": [
+            {"id": "openai-A1", "date": "2026-09-03", "provider": "OpenAI", "number": "A1", "gross": 23.0, "file": KI_DIR + "/a.pdf"},
+            {"id": "openai-B2", "date": "2026-10-01", "provider": "OpenAI", "number": "B2", "gross": 40.0, "file": KI_DIR + "/b.pdf"}]}).encode())
+        local = json.loads(json.dumps(cloud)); local["settings"] = dict(backup["settings"], **{k: v for k, v in local["settings"].items() if v})
+        ctx, page, errors = new_page(browser, base, dbx, local)
+        page.evaluate("()=>syncWithDropbox({interactive:true})")
+        page.evaluate("()=>document.querySelector('[data-tab=invoice]').click()")
+        check("Automatik-Karte zeigt „alles ok“", "alles ok" in page.evaluate("()=>document.getElementById('v720Watch')?.textContent||''"))
+        open_items = page.evaluate("""()=>{const y=new Date().getFullYear();const r=[];for(const year of [y-1,y]){const rep=OrdiPilotTaxCore.yearReport({entries:state.entries,parking:state.parkingRecords,invoices:state.invoices,payments:state.payments,trips:state.trips,expenses:[],settings:state.settings,year,fns:{isEarned:e=>isEarnedEntry(e),hours:e=>entryHours(e)||0,gross:e=>gross(e)||0}});for(const x of rep.services)if(x.gross>0&&x.open>0.005)r.push([x.key,x.open,x.ym])}return r}""")
+        target = open_items[-1] if open_items else None
+        check("Testdaten: offene Honorarnoten vorhanden", target is not None, str(open_items)[:200])
+        if target:  # gleich hohe andere Monate per 1 € Teilzahlung unterscheidbar machen
+            others = [o[0] for o in open_items if o[1] == target[1] and o[0] != target[0]]
+            page.evaluate("ks=>{for(const k of ks)state.payments.push({id:'t-'+k,key:k,paidAt:'2026-10-01',paidYear:'2026',amount:1,note:'Test',updatedAt:new Date().toISOString()});saveState()}", others)
+        if target:
+            y, m = map(int, target[2].split("-")); bdate = f"{y + (m == 12)}-{(m % 12) + 1:02d}-05"
+            dbx.put(ROOT_DBX + "/Kontoumsaetze/george.json", json.dumps([
+                {"booking": bdate + "T00:00:00.000+0100", "partnerName": "Ordination", "amount": {"value": round(target[1] * 100), "precision": 2, "currency": "EUR"}, "reference": "Honorar"},
+                {"booking": bdate + "T00:00:00.000+0100", "partnerName": "Supermarkt", "amount": {"value": -2350, "precision": 2}}]).encode())
+            page.evaluate("()=>syncWithDropbox({interactive:true})")
+            pays = [p for p in dbx.get(DATA).get("payments", []) if p.get("source") == "bank"]
+            check("Gutschrift als Zahlungseingang erfasst (Buchungsdatum, auch in Dropbox)", len(pays) == 1 and pays[0]["key"] == target[0] and pays[0]["paidAt"] == bdate, str(pays)[:200])
+            page.evaluate("()=>syncWithDropbox({interactive:true})")
+            check("Zweiter Sync: keine doppelte Zahlung", len([p for p in dbx.get(DATA).get("payments", []) if p.get("source") == "bank"]) == 1)
+        # Steuerpaket mit KI-Belegen
+        page.evaluate("async()=>{ordipilotTax.setYear(2026);await ordipilotTax.exportPackage()}")
+        ki_copies = [c for c in dbx.copies if c[1].endswith(".pdf") and "/KI-Belege/" in c[1]]
+        check("Steuerpaket enthält die KI-Belege als PDF", len(ki_copies) == 2, str(dbx.copies)[:300])
+        readme = next((v[1].decode("utf-8") for k, v in dbx.files.items() if k.endswith("/liesmich.txt")), "")
+        check("LIESMICH nennt Weitere_Ausgaben und KI-Belege", "Weitere_Ausgaben_2026.csv" in readme and "KI-Belege/" in readme, readme[:300])
+        # Status veraltet → Warnung in der Karte
+        dbx.put(SYSTEM + "/Import/automatik-status.json", json.dumps({"version": 1, "updatedAt": "2026-01-01T00:00:00Z", "components": [{"key": "ki", "label": "KI-Ausgaben-Automatik", "last": "2026-01-01T00:00:00Z"}]}).encode())
+        page.evaluate("()=>syncWithDropbox({interactive:true})")
+        page.evaluate("()=>document.querySelector('[data-tab=invoice]').click()")
+        txt = page.evaluate("()=>document.getElementById('v720Watch')?.textContent||''")
+        check("Veralteter Status → Warnung „meldet sich nicht“", "nicht gemeldet" in txt and "Problem" in txt, txt[:200])
+        check("Sync-Status nennt das Problem", "meldet sich seit" in page.evaluate("()=>document.getElementById('dropboxStatus')?.textContent||''"))
+        check("Keine JavaScript-Fehler (Automatik-Status/Konto)", not errors, "; ".join(errors)[:300])
         ctx.close()
 
         print("12) Update von der installierten Einzeldatei-Version (6.18.1) auf die aufgeteilte Version")
