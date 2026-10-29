@@ -2337,11 +2337,11 @@ function renderOverviewV6() {
       items = [];
     if (openEntries.length)
       items.push(
-        `<button type="button" class="v6-list-row v6-action-row" data-open-dashboard="entries"><div class="v6-row-main"><div class="v6-row-title">${openEntries.length} Einsatz${openEntries.length === 1 ? '' : 'e'} mit ausständiger Bestätigung</div><div class="v6-row-sub">Antippen und tatsächliche Zeit bestätigen</div></div><div class="v6-row-right"><span class="badge warn">offen</span><span class="v6-chevron">›</span></div></button>`
+        `<button type="button" class="v6-list-row v6-action-row" data-open-dashboard="entries"><div class="v6-row-main"><div class="v6-row-title">${openEntries.length} ${openEntries.length === 1 ? 'Einsatz' : 'Einsätze'} mit ausständiger Bestätigung</div><div class="v6-row-sub">Antippen und tatsächliche Zeit bestätigen</div></div><div class="v6-row-right"><span class="badge warn">offen</span><span class="v6-chevron">›</span></div></button>`
       );
     if (unassigned.length)
       items.push(
-        `<button type="button" class="v6-list-row v6-action-row" data-open-dashboard="parking"><div class="v6-row-main"><div class="v6-row-title">${unassigned.length} Parkvorgang${unassigned.length === 1 ? '' : 'e'} ohne sichere Zuordnung</div><div class="v6-row-sub">Noch nicht von deinen Finanzzahlen abgezogen</div></div><div class="v6-row-right"><span class="badge missing">prüfen</span><span class="v6-chevron">›</span></div></button>`
+        `<button type="button" class="v6-list-row v6-action-row" data-open-dashboard="parking"><div class="v6-row-main"><div class="v6-row-title">${unassigned.length} ${unassigned.length === 1 ? 'Parkvorgang' : 'Parkvorgänge'} ohne sichere Zuordnung</div><div class="v6-row-sub">Noch nicht von deinen Finanzzahlen abgezogen</div></div><div class="v6-row-right"><span class="badge missing">prüfen</span><span class="v6-chevron">›</span></div></button>`
       );
     v6OpenItems.innerHTML = items.length ? items.join('') : '<div class="v6-open-empty">Aktuell nichts offen.</div>';
     v6OpenItems
@@ -2456,7 +2456,7 @@ function renderInvoiceWorkflow() {
     total = es.reduce((a, e) => a + (gross(e) || 0), 0),
     read = monthReadinessV63(invYear.value, invMonth.value);
   invoiceTotalValue.textContent = modelMoney(total);
-  invoiceTotalMeta.textContent = `${modelHours(hrs)} Stunden · ${es.length} Einsatz${es.length === 1 ? '' : 'e'}`;
+  invoiceTotalMeta.textContent = `${modelHours(hrs)} Stunden · ${es.length} ${es.length === 1 ? 'Einsatz' : 'Einsätze'}`;
   invoiceNumberDisplay.textContent = invNumber.value || defaultInvoiceNumber(invYear.value, invMonth.value);
   renderInvoiceReadinessV63();
   renderInvoiceHistoryV63();
@@ -2859,7 +2859,7 @@ function renderV67Day() {
   const es = entriesOnDate(v67SelectedDate).sort((a, b) =>
       (entryPlannedStart(a) || '').localeCompare(entryPlannedStart(b) || '')
     ),
-    head = `<div class="v67-day-head"><strong>${escapeHtml(prettyDate(v67SelectedDate, true))}</strong><small>${es.length ? `${es.length} Einsatz${es.length === 1 ? '' : 'e'}` : 'Noch nichts geplant'}</small></div>`;
+    head = `<div class="v67-day-head"><strong>${escapeHtml(prettyDate(v67SelectedDate, true))}</strong><small>${es.length ? `${es.length} ${es.length === 1 ? 'Einsatz' : 'Einsätze'}` : 'Noch nichts geplant'}</small></div>`;
   if (!es.length) {
     root.innerHTML =
       head +

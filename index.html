@@ -8,12 +8,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=700">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=700">
+<link rel="manifest" href="manifest.webmanifest?v=701">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=701">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/ordipilot-v6161-32.png">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=700">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=701">
 <title>OrdiPilot</title>
-<link rel="stylesheet" href="css/base.css?v=700">
+<link rel="stylesheet" href="css/base.css?v=701">
 </head>
 <body>
 <div class="app">
@@ -212,10 +212,10 @@
 <dialog id="parkingDialog"><form method="dialog" class="modal parking-modal" id="parkingForm"><div class="modal-topbar"><h3 id="parkingModalTitle">Parkvorgang</h3><button type="button" class="modal-close-x" id="parkingCloseTop" aria-label="Schließen">×</button></div><div class="parking-content"><div class="parking-calendar" id="parkingCalendar"><div class="parking-cal-head"><button type="button" class="parking-cal-nav" id="parkingCalPrev" aria-label="Vorheriger Monat">‹</button><strong id="parkingCalTitle">–</strong><div style="display:flex;gap:5px"><button type="button" class="parking-cal-today" id="parkingCalToday">Heute</button><button type="button" class="parking-cal-nav" id="parkingCalNext" aria-label="Nächster Monat">›</button></div></div><div class="parking-cal-week"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="parking-cal-grid" id="parkingCalGrid"></div></div><div class="formgrid"><div class="field"><label>Datum</label><input id="pDate" type="date" required></div><div class="field"><label>Betrag (€)</label><input id="pAmount" type="number" min="0" step="0.01" inputmode="decimal" required></div><div class="field"><label>Anbieter</label><select id="pProvider"><option>HANDYPARKEN</option><option>EasyPark</option><option>Parkschein</option><option>Sonstiges</option></select></div><div class="field"><label>Einsatz zuordnen</label><select id="pEntryId"><option value="">keine Zuordnung</option></select></div><div class="field"><label>Start</label><input id="pStart" type="time"></div><div class="field"><label>Ende</label><input id="pEnd" type="time"></div><div class="field wide"><label>Standort</label><div class="location-row"><input id="pCity" placeholder="Adresse oder Ort manuell eingeben"><button type="button" class="location-detect" id="detectParkingLocation">Standort erkennen</button></div><div class="location-status" id="parkingLocationStatus">Optional: per GPS erkennen oder manuell eintragen.</div></div><div class="field"><label>Zone</label><input id="pZone"></div><div class="field"><label>VAT (€)</label><input id="pVat" type="number" min="0" step="0.01"></div><div class="field"><label>Dokumenttyp</label><select id="pDocumentType"><option value="receipt">Quittung / Beleg</option><option value="confirmation">Parkbestätigung</option><option value="manual">manueller Beleg</option></select></div><div class="field"><label>Berücksichtigung</label><select id="pExcluded"><option value="counted">Beruflich / berücksichtigen</option><option value="excluded">Privat / nicht berücksichtigen</option></select></div><div class="field wide"><label>Bemerkung</label><input id="pNote" placeholder="z. B. Korneuburg, 09:00–17:00"></div><div class="field wide"><label class="filelabel">Beleg fotografieren / auswählen<input id="pReceipt" type="file" accept="image/*,application/pdf"></label><div class="help" id="pReceiptInfo">Kein Beleg ausgewählt.</div></div></div></div><div class="modal-actions"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" id="saveParking" value="default">Speichern</button></div></form></dialog>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="js/boot.js?v=700"></script>
-<script src="js/app.js?v=700"></script>
+<script src="js/boot.js?v=701"></script>
+<script src="js/app.js?v=701"></script>
 
-<link rel="stylesheet" href="css/v68.css?v=700" id="v68-style">
+<link rel="stylesheet" href="css/v68.css?v=701" id="v68-style">
 
 <dialog id="v68PlanDialog" class="v68-plan-dialog">
   <div class="v68-plan-shell">
@@ -243,28 +243,28 @@
   </div>
 </dialog>
 
-<script src="js/v68.js?v=700" id="v68-script"></script>
+<script src="js/v68.js?v=701" id="v68-script"></script>
 
 
-<script src="js/v69.js?v=700" id="v69-script"></script>
+<script src="js/v69.js?v=701" id="v69-script"></script>
 
 
-<script src="js/v6103-parking-fix.js?v=700" id="v6103-parking-fix"></script>
+<script src="js/v6103-parking-fix.js?v=701" id="v6103-parking-fix"></script>
 
 
-<link rel="stylesheet" href="css/v611.css?v=700" id="v611-style">
-<script src="js/v611.js?v=700" id="v611-script"></script>
-<script src="js/v6102-calendar-batch-fix.js?v=700" id="v6102-calendar-batch-fix"></script>
+<link rel="stylesheet" href="css/v611.css?v=701" id="v611-style">
+<script src="js/v611.js?v=701" id="v611-script"></script>
+<script src="js/v6102-calendar-batch-fix.js?v=701" id="v6102-calendar-batch-fix"></script>
 
 <!-- v6113-hotfix.js ist seit V6.12 fest eingebaut (Marker: verhindert erneutes Einschleusen durch alte Service Worker) -->
-<script src="js/v612-recipients.js?v=700" id="v612-recipients"></script>
-<script src="js/v612-sync-core.js?v=700" id="v612-sync-core"></script>
-<script src="js/v614-tax.js?v=700" id="v614-tax"></script>
-<script src="js/v615-ui.js?v=700" id="v615-ui"></script>
-<script src="js/v616-auto.js?v=700" id="v616-auto"></script>
-<script src="js/v617-send.js?v=700" id="v617-send"></script>
+<script src="js/v612-recipients.js?v=701" id="v612-recipients"></script>
+<script src="js/v612-sync-core.js?v=701" id="v612-sync-core"></script>
+<script src="js/v614-tax.js?v=701" id="v614-tax"></script>
+<script src="js/v615-ui.js?v=701" id="v615-ui"></script>
+<script src="js/v616-auto.js?v=701" id="v616-auto"></script>
+<script src="js/v617-send.js?v=701" id="v617-send"></script>
 
-<script src="js/v619-reserve.js?v=700" id="v619-reserve"></script>
-<script src="js/main.js?v=700"></script>
+<script src="js/v619-reserve.js?v=701" id="v619-reserve"></script>
+<script src="js/main.js?v=701"></script>
 
 </body></html>

@@ -2,7 +2,7 @@
 
 1. **script.google.com** öffnen → das Projekt mit der **EasyPark-Automatik** öffnen.
 2. Links bei „Dateien“ auf **+ → Skript** → Name: `Honorarnote_Versand`.
-3. Den gesamten Inhalt von [`Honorarnote_Versand.gs`](Honorarnote_Versand.gs) hineinkopieren (vorhandenen Beispieltext ersetzen) → **Speichern**.
+3. Den gesamten Inhalt von [`apps-script/Honorarnote_Versand.gs`](apps-script/Honorarnote_Versand.gs) hineinkopieren (vorhandenen Beispieltext ersetzen) → **Speichern**.
 4. Oben in der Funktionsauswahl **`setupHonorarnoteVersand`** wählen → **Ausführen** → Zugriff erlauben
    (Google fragt einmal nach „E-Mails in deinem Namen senden“ – das ist genau diese Funktion).
 5. Im **Ausführungsprotokoll** steht: `Schlüssel für OrdiPilot: …` → diesen Schlüssel kopieren.

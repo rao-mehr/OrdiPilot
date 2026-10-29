@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const code = fs.readFileSync(new URL('../Honorarnote_Versand.gs', import.meta.url), 'utf8');
+const code = fs.readFileSync(new URL('../apps-script/Honorarnote_Versand.gs', import.meta.url), 'utf8');
 const ROOT = '/Ordination & Selbständigkeit/Vertretungsdienste/Honorarnoten/';
 
 function env({ token = 'geheim', dropboxStatus = 200 } = {}) {

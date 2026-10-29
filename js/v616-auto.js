@@ -47,6 +47,12 @@
     return h * 60 + m;
   };
   // Pro Tag: erste Ankunft, letzte Abfahrt danach, „ab Arbeit“ wenn die Klinik höchstens 3 h vor Ankunft verlassen wurde
+  // Aufenthalte statt „erste Ankunft bis letzte Abfahrt“:
+  //  - Ankunft öffnet einen Aufenthalt, die nächste Abfahrt schließt ihn (doppelte Meldungen werden ignoriert)
+  //  - Aufenthalte mit ≤ 15 Min. Lücke werden zusammengefasst (GPS-Sprünge, kurz zum Auto)
+  //  - Aufenthalte unter 20 Min. zählen nicht als Dienst (Vorbeifahrt, Testlauf beim Einrichten der Automation)
+  const MERGE_GAP = 15,
+    MIN_STAY = 20;
   function summarize(events) {
     const days = new Map();
     for (const e of events) {
@@ -56,13 +62,31 @@
     const out = [];
     for (const [date, list] of days) {
       list.sort((a, b) => tm(a.time) - tm(b.time));
-      const arrive = list.find(e => e.type === 'arrive');
-      if (!arrive) continue;
-      const leave = [...list].reverse().find(e => e.type === 'leave' && tm(e.time) > tm(arrive.time));
+      let visits = [],
+        open = null;
+      for (const e of list) {
+        if (e.type === 'arrive' && !open) open = { arrive: e.time, leave: '' };
+        else if (e.type === 'leave' && open) {
+          open.leave = e.time;
+          visits.push(open);
+          open = null;
+        }
+      }
+      if (open) visits.push(open);
+      const merged = [];
+      for (const v of visits) {
+        const last = merged[merged.length - 1];
+        if (last && last.leave && tm(v.arrive) - tm(last.leave) <= MERGE_GAP) last.leave = v.leave;
+        else merged.push({ ...v });
+      }
+      visits = merged.filter(v => !v.leave || tm(v.leave) - tm(v.arrive) >= MIN_STAY);
+      if (!visits.length) continue;
+      const arrive = visits[0].arrive,
+        leave = visits[visits.length - 1].leave;
       const work = [...list]
         .reverse()
-        .find(e => e.type === 'work' && tm(e.time) <= tm(arrive.time) && tm(arrive.time) - tm(e.time) <= 180);
-      out.push({ date, arrive: arrive.time, leave: leave?.time || '', fromWork: !!work });
+        .find(e => e.type === 'work' && tm(e.time) <= tm(arrive) && tm(arrive) - tm(e.time) <= 180);
+      out.push({ date, arrive, leave, fromWork: !!work });
     }
     return out.sort((a, b) => a.date.localeCompare(b.date));
   }
@@ -143,6 +167,7 @@
       if (!e) {
         const id = 'geo-' + d.date;
         if (state.deletedEntries && state.deletedEntries[id]) continue; // bewusst gelöscht – nicht wieder anlegen
+        if (locked({ date: d.date, recipientId: primaryRid() })) continue; // Monat bereits abgerechnet – nichts nachtragen
         e = {
           id,
           date: d.date,
@@ -185,19 +210,52 @@
     }
     return { created, updated, work };
   }
+  // Automatisch angelegte, noch unbestätigte Einsätze entfernen, deren Tag nach den aktuellen Regeln
+  // kein Dienst mehr ist (z. B. Testlauf beim Einrichten). Bestätigte oder geänderte Einsätze bleiben.
+  function removeStaleGeo(days) {
+    const keep = new Set(days.map(d => d.date)),
+      from = addDaysISO(todayISO(), -60),
+      to = todayISO();
+    const stale = (state.entries || []).filter(
+      e =>
+        e.source === 'geo' &&
+        String(e.id).startsWith('geo-') &&
+        !e.confirmedAt &&
+        !e.start && // unbestätigt und ohne Zeiten: zählt in keiner Honorarnote, darf auch im abgerechneten Monat weg
+        e.date >= from &&
+        e.date <= to &&
+        !keep.has(e.date)
+    );
+    if (!stale.length) return 0;
+    if (!state.deletedEntries) state.deletedEntries = {};
+    for (const e of stale) state.deletedEntries[e.id] = now();
+    const ids = new Set(stale.map(e => e.id));
+    state.entries = state.entries.filter(e => !ids.has(e.id));
+    // dazu automatisch angelegte Fahrten
+    if (!state.deletedTrips) state.deletedTrips = {};
+    for (const t of state.trips || []) if (t.auto && ids.has(t.entryId)) state.deletedTrips[t.id] = now();
+    state.trips = (state.trips || []).filter(t => !(t.auto && ids.has(t.entryId)));
+    return stale.length;
+  }
   async function importGeo() {
     if (!isDropboxConnected()) return;
     const blob = await dbxDownload(LOG);
     if (!blob) return;
-    const days = A.summarize(A.parseLog(await blob.text())).filter(
-      d => d.date >= addDaysISO(todayISO(), -60) && d.date <= todayISO()
-    );
+    const events = A.parseLog(await blob.text());
+    const days = A.summarize(events).filter(d => d.date >= addDaysISO(todayISO(), -60) && d.date <= todayISO());
     const r = applyGeo(days);
-    state.settings.geoLastEvent = days.length
-      ? days[days.length - 1].date + ' ' + (days[days.length - 1].leave || days[days.length - 1].arrive)
-      : state.settings.geoLastEvent || '';
-    if (r.created || r.updated)
-      lastNote = `Standort: ${r.created ? r.created + ' Einsatz neu erkannt' : ''}${r.created && r.updated ? ', ' : ''}${r.updated ? r.updated + ' Zeiten übernommen' : ''}`;
+    r.removed = removeStaleGeo(days);
+    // „zuletzt …“ = letztes Signal überhaupt (zeigt, dass die Automation arbeitet)
+    const last = events
+      .filter(e => e.date <= todayISO())
+      .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+      .pop();
+    if (last) state.settings.geoLastEvent = last.date + ' ' + last.time;
+    const parts = [];
+    if (r.created) parts.push(r.created + ' Einsatz neu erkannt');
+    if (r.updated) parts.push(r.updated + ' Zeiten übernommen');
+    if (r.removed) parts.push(r.removed + ' Fehlerkennung entfernt');
+    if (parts.length) lastNote = 'Standort: ' + parts.join(', ');
   }
   function addDaysISO(iso, n) {
     const [y, m, d] = iso.split('-').map(Number),
@@ -385,7 +443,7 @@
       <p><b>3. Ortung erlauben:</b> Einstellungen → Datenschutz → Ortungsdienste → Kurzbefehle → <b>Immer</b>.</p>
       <p><b>4. Test:</b> Bei „OrdiPilot Klinik“ einmal ▶︎ tippen – in Dropbox erscheint eine Zeile in <code>standort.txt</code> (eine einzelne „klinik“-Zeile legt keinen Einsatz an). Nach dem ersten echten Dienst steht oben „zuletzt …“.</p>
       ${copy('Pfad der Datei', LOG)}
-      <p class="help">Bestätigte und abgerechnete Einsätze werden nie verändert. Erkannte Zeiten erscheinen beim Einsatz mit 📍 und werden erst beim Bestätigen übernommen. Ein gelöschter, automatisch erkannter Einsatz wird nicht wieder angelegt. Nie mit „ankunft“/„abfahrt“ testen – das würde für heute Zeiten vorschlagen.</p>
+      <p class="help">Bestätigte und abgerechnete Einsätze werden nie verändert. Erkannte Zeiten erscheinen beim Einsatz mit 📍 und werden erst beim Bestätigen übernommen. Ein gelöschter, automatisch erkannter Einsatz wird nicht wieder angelegt. Aufenthalte unter 20 Minuten zählen nicht als Dienst – Testläufe beim Einrichten (iOS führt neue Automationen oft einmal aus) und Vorbeifahrten sind damit harmlos; kurze Unterbrechungen bis 15 Minuten werden zusammengefasst.</p>
       <p class="help"><b>Zahlungsnachweise:</b> Liegt in Dropbox unter Zahlungsnachweise/&lt;Jahr&gt; eine Datei „JJJJ-MM_Zahlungsnachweis…“, wird der Monat automatisch als bezahlt markiert.</p>
       <p class="help"><b>Monatsende:</b> In den letzten Tagen des Monats erinnert die Übersicht an die Honorarnote. Zusätzlich als Kurzbefehl (Kurzbefehle → <b>+</b>):</p>
       ${copy('Prompt Monatsende', T.monthEnd)}

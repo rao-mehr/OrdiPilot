@@ -10,8 +10,7 @@ Persönliche Web-App (PWA) für ärztliche Vertretungsdienste: Einsätze, Parkbe
 | `js/` | App-Code, ein Modul pro Bereich |
 | `css/` | Gestaltung |
 | `service-worker.js`, `manifest.webmanifest`, `icons/` | Offline-Betrieb und Installation am Home-Bildschirm |
-| `Honorarnote_Versand.gs` | Apps-Script-Web-App für den Versand über Gmail (Einrichtung: `SETUP_Gmail_Versand.md`) |
-| `appsscript.json` | Manifest für das Apps-Script-Projekt |
+| `apps-script/` | Code im Google-Apps-Script-Projekt „Vertretungsabrechnung EasyPark“: `Honorarnote_Versand.gs` (Versand über Gmail, Einrichtung: `SETUP_Gmail_Versand.md`), `EasyPark.gs` (laufender Stand des EasyPark-Imports, Stand 29.10.2026), `appsscript.json`. Geheimnisse liegen nur in den Script-Eigenschaften bei Google. |
 | `SETUP_*` | Einrichtungsanleitungen |
 | `tests/` | Unit-Tests (`node --test tests/*.test.mjs`), Browser-Tests (`python tests/browser_smoke.py`) und Charakterisierung (`python tests/characterize.py`) |
 | `archiv/` | Ältere Versionen, nicht mehr in Verwendung |

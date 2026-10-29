@@ -159,9 +159,10 @@
       locked = !!(rec && (rec.signedAt || rec.mailOpenedAt)),
       reasons = [];
     if (!done.length) reasons.push('keine abgeschlossenen Einsätze');
-    if (pending.length) reasons.push(`${pending.length} Einsatz${pending.length === 1 ? '' : 'e'} noch offen/geplant`);
+    if (pending.length)
+      reasons.push(`${pending.length} ${pending.length === 1 ? 'Einsatz' : 'Einsätze'} noch offen/geplant`);
     if (unassigned.length)
-      reasons.push(`${unassigned.length} Parkvorgang${unassigned.length === 1 ? '' : 'e'} ungeklärt`);
+      reasons.push(`${unassigned.length} ${unassigned.length === 1 ? 'Parkvorgang' : 'Parkvorgänge'} ungeklärt`);
     return {
       mk,
       es,
@@ -418,7 +419,7 @@
                 ? 'bereit'
                 : 'keine Einsätze',
           cls = rec?.signedAt ? 'ok' : rec?.createdAt || es.length ? 'blue' : '';
-        return `<button type="button" class="v611-invoice-recipient ${r.id === active ? 'active' : ''}" data-v611-invoice-recipient="${esc(r.id)}"><strong>${esc(r.name || 'Empfänger')}</strong><div class="sum">${euro(sum)}</div><small>${dec(hrs, 1)} h · ${es.length} Einsatz${es.length === 1 ? '' : 'e'}</small><span class="state ${cls}">${stateLabel}</span></button>`;
+        return `<button type="button" class="v611-invoice-recipient ${r.id === active ? 'active' : ''}" data-v611-invoice-recipient="${esc(r.id)}"><strong>${esc(r.name || 'Empfänger')}</strong><div class="sum">${euro(sum)}</div><small>${dec(hrs, 1)} h · ${es.length} ${es.length === 1 ? 'Einsatz' : 'Einsätze'}</small><span class="state ${cls}">${stateLabel}</span></button>`;
       })
       .join('');
     host.querySelectorAll('[data-v611-invoice-recipient]').forEach(
@@ -913,7 +914,7 @@
         'Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
     document.querySelectorAll('.footer-note').forEach(el => {
       if (/Version/i.test(el.textContent))
-        el.textContent = el.textContent.replace(/Version\s*[0-9.]+/i, 'Version 7.0.0');
+        el.textContent = el.textContent.replace(/Version\s*[0-9.]+/i, 'Version 7.0.1');
     });
     applyRecipientToLegacy(state.settings.activeRecipientId, false);
     if (window.setRecipientName) {
