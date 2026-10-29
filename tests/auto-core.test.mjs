@@ -38,3 +38,20 @@ test('Zahlungsnachweise: Monat aus dem Dateinamen, Jahr aus dem Ablagedatum', ()
   const r = A.proofsToMonths([{ name: '2026-12_Zahlungsnachweis_X.pdf', client_modified: '2027-01-09T10:00:00Z' }, { name: 'Notiz.pdf' }]);
   assert.deepEqual(plain(r), [{ ym: '2026-12', paidYear: '2027', file: '2026-12_Zahlungsnachweis_X.pdf' }]);
 });
+
+test('Einrichtungstexte (iOS 27): drei Kurzbefehle, drei Automationen, Wörter passen zum Leser', () => {
+  const log = '/X/System/Import/standort.txt';
+  const T = A.guideTexts(log, 'Ordinationsweg 2, 2100 Korneuburg', 'Spital, Hauptstraße 1, 1220 Wien');
+  assert.deepEqual(plain(T.shortcuts.map(s => s.name)), ['OrdiPilot Ankunft', 'OrdiPilot Abfahrt', 'OrdiPilot Klinik']);
+  for (const s of T.shortcuts) {
+    assert.ok(s.prompt.includes(log) && s.prompt.includes('ISO 8601') && s.prompt.includes(`Wort ${s.word}.`));
+    // Was der Kurzbefehl schreibt, muss der Leser verstehen
+    const ev = A.parseLog(`2026-10-29T08:00:00+01:00 ${s.word}`);
+    assert.equal(ev.length, 1);
+  }
+  assert.equal(T.automations.length, 3);
+  assert.match(T.automations[0].prompt, /bei Ordinationsweg 2, 2100 Korneuburg ankomme.*„OrdiPilot Ankunft“/);
+  assert.match(T.automations[1].prompt, /Ordinationsweg 2, 2100 Korneuburg verlasse.*„OrdiPilot Abfahrt“/);
+  assert.match(T.automations[2].prompt, /Spital, Hauptstraße 1, 1220 Wien verlasse.*„OrdiPilot Klinik“/);
+  assert.match(T.monthEnd, /letzten Tag jedes Monats/);
+});

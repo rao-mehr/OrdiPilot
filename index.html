@@ -8,10 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=6180">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6180">
+<link rel="manifest" href="manifest.webmanifest?v=6181">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6181">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/ordipilot-v6161-32.png">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6180">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=6181">
 <title>OrdiPilot</title>
 <style>
 @font-face{font-family:"Carlito";font-style:normal;font-weight:400;font-display:swap;src:url("https://cdn.jsdelivr.net/fontsource/fonts/carlito@5.3.0/latin-400-normal.woff2") format("woff2")}
@@ -1168,7 +1168,7 @@ setupV67();
 
   // UI copy and version.
   const help=document.querySelector('#panel-entries .v6-page-sub');if(help)help.textContent='Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
-  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.18.0')});
+  document.querySelectorAll('.footer-note').forEach(el=>{if(/Version/i.test(el.textContent))el.textContent=el.textContent.replace(/Version\s*[0-9.]+/i,'Version 6.18.1')});
   applyRecipientToLegacy(state.settings.activeRecipientId,false);if(window.setRecipientName){setRecipientName.value=state.settings.recipientName||'';setRecipientQualification.value=state.settings.recipientQualification||'';setRecipientAddress.value=state.settings.recipientAddress||'';setRecipientEmail.value=state.settings.recipientEmail||''}
   invNumber.value=invoiceRecord()?.number||defaultInvoiceNumber(invYear.value,invMonth.value);
   renderRecipientManager();renderEntries();renderParking();renderInvoice();saveState(false);
@@ -1181,7 +1181,7 @@ setupV67();
 /* OrdiPilot V6.12 · Empfängerspezifische Honorarnoten-Texte (vormals v6113-hotfix.js, jetzt fest eingebaut). */
 (function(){
   'use strict';
-  const VERSION='6.18.0';
+  const VERSION='6.18.1';
   const DEFAULT_ROLE='Ordinationsinhaberin';
   const DEFAULT_SERVICE='Ärztliche Vertretungstätigkeit';
 
@@ -2334,13 +2334,21 @@ setupV67();
     }
     return out.sort((a,b)=>a.date.localeCompare(b.date));
   }
+  // Texte für die Einrichtung per „Kurzbefehl beschreiben“ (iOS 27) – zum Kopieren
+  function guideTexts(log,ord,work){
+    const sc=(name,word)=>({name,word,prompt:`Nimm das aktuelle Datum und formatiere es als ISO 8601 mit Uhrzeit. Erstelle einen Text aus dem formatierten Datum, einem Leerzeichen und dem Wort ${word}. Hänge diesen Text als neue Zeile an die Dropbox-Datei ${log} an.`});
+    const shortcuts=[sc('OrdiPilot Ankunft','ankunft'),sc('OrdiPilot Abfahrt','abfahrt'),sc('OrdiPilot Klinik','klinik')];
+    const au=(label,place,verb,name)=>({label,prompt:`Wenn ich ${place} ${verb}, führe sofort und ohne Nachfrage den Kurzbefehl „${name}“ aus. Keine weiteren Aktionen.`});
+    return {shortcuts,automations:[au('Ankommen Ordination',`bei ${ord}`,'ankomme','OrdiPilot Ankunft'),au('Verlassen Ordination',ord,'verlasse','OrdiPilot Abfahrt'),au('Verlassen Arbeit',work,'verlasse','OrdiPilot Klinik')],
+      monthEnd:'Zeige am letzten Tag jedes Monats um 18:00 Uhr die Mitteilung „Honorarnote erstellen“.'};
+  }
   // Zahlungsnachweis-Dateien → bezahlte Monate (Jahr der Zahlung = Jahr, in dem der Nachweis abgelegt wurde)
   function proofsToMonths(files){
     const out=[];
     for(const f of files||[]){const m=String(f.name||'').match(/^(\d{4})-(\d{2})_Zahlungsnachweis/i);if(m)out.push({ym:`${m[1]}-${m[2]}`,paidYear:String(f.client_modified||f.server_modified||'').slice(0,4)||m[1],file:f.name})}
     return out;
   }
-  root.OrdiPilotAutoCore={parseLog,summarize,proofsToMonths};
+  root.OrdiPilotAutoCore={parseLog,summarize,proofsToMonths,guideTexts};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* ===== Verdrahtung mit der App ===== */
@@ -2448,23 +2456,30 @@ setupV67();
     let el=document.getElementById('v616Guide');const wasOpen=el?.open;
     if(!el){el=document.createElement('details');el.id='v616Guide';el.className='v615-nopark-card no-print';(document.getElementById('v615NoPark')||auto).insertAdjacentElement('afterend',el)}
     const lastEv=state.settings.geoLastEvent;
-    const line=w=>`<code>[Formatiertes Datum] ${w}</code>`;
+    const ord=state.settings.calendarEventLocation||'Adresse der Ordination';
+    const work=state.settings.travelWork||'Adresse deines Arbeitsplatzes';
+    const T=A.guideTexts(LOG,ord,work);
+    const copy=(label,text)=>`<div class="v618-copy"><div class="v618-copy-label">${esc(label)}</div><div class="v618-copy-row"><code>${esc(text)}</code><button type="button" class="btn soft" data-copy="${esc(text)}">Kopieren</button></div></div>`;
     el.innerHTML=`<summary><span>Standort-Automatik (iPhone)</span><span style="color:#8e8e93;font-weight:650;font-size:13px">${lastEv?'zuletzt '+esc(dateAT(lastEv.slice(0,10)))+' '+esc(lastEv.slice(11)):'nicht eingerichtet'} ›</span></summary>
     <div class="v615-nopark-list v616-guide">
-      <p>Das iPhone meldet Ankunft und Abfahrt an der Ordination automatisch in Dropbox. OrdiPilot übernimmt daraus beim nächsten Sync die Zeiten, legt vergessene Einsätze zum Bestätigen an und erkennt Fahrten „ab Arbeit“.</p>
-      <ol>
-        <li><b>Kurzbefehle</b> → <b>Automation</b> → <b>+</b> → <b>Ankommen</b>. Ort: <b>${esc(state.settings.calendarEventLocation||'Adresse der Ordination')}</b>. <b>Sofort ausführen</b> wählen.</li>
-        <li>Aktionen: <b>Aktuelles Datum</b> → <b>Datum formatieren</b> (Format: <b>ISO 8601</b>, „ISO 8601-Uhrzeit einschließen“ an) → <b>Text</b>: ${line('ankunft')} → <b>An Textdatei anhängen</b>: Dienst <b>Dropbox</b>, Pfad unten, „Neue Zeile“ an.</li>
-        <li>Dasselbe mit <b>Verlassen</b> der Ordination und dem Wort <code>abfahrt</code>.</li>
-        <li>Optional: <b>Verlassen</b> der Klinik (${esc(state.settings.travelWork||'Arbeitsplatz')}) mit dem Wort <code>klinik</code>. Kommst du danach innerhalb von 3 Stunden in der Ordination an, zählt die Fahrt als „ab Arbeit“.</li>
-      </ol>
-      <div class="v616-path"><code id="v616Path">${esc(LOG)}</code><button type="button" class="btn soft" id="v616Copy">Pfad kopieren</button></div>
-      <p class="help">Bestätigte und abgerechnete Einsätze werden nie verändert. Erkannte Zeiten erscheinen beim Einsatz mit 📍 und werden erst beim Bestätigen übernommen. Ein gelöschter, automatisch erkannter Einsatz wird nicht wieder angelegt.</p>
+      <p>Das iPhone meldet Ankunft und Abfahrt an der Ordination automatisch in Dropbox. OrdiPilot übernimmt daraus beim nächsten Sync die Zeiten, legt vergessene Einsätze zum Bestätigen an und erkennt Fahrten „ab Arbeit“. Alles wird nur kopiert und eingefügt (iOS 27, „Kurzbefehl beschreiben“).</p>
+      <p><b>1. Drei Kurzbefehle</b> – je: Kurzbefehle → <b>+</b> → Prompt einfügen → erstellen, dann oben auf den Namen tippen → <b>Umbenennen</b>.</p>
+      ${T.shortcuts.map(x=>copy('Name',x.name)+copy('Prompt',x.prompt)).join('<hr class="v618-sep">')}
+      <p class="help">Prüfen: drei Aktionen – Aktuelles Datum · Datum formatieren · <b>Anfügen</b> mit Dropbox-Symbol, „Neue Zeile erstellen“ an.</p>
+      <p><b>2. Drei Automationen</b> – je: Kurzbefehle → <b>+</b> → Prompt einfügen.</p>
+      ${T.automations.map(x=>copy(x.label,x.prompt)).join('')}
+      ${state.settings.travelWork?'':'<p class="help">Tipp: Unter <b>Honorar → Fahrten</b> den Arbeitsplatz mit Adresse eintragen, dann steht er hier fertig im Prompt.</p>'}
+      <p class="help">Prüfen: einzige Aktion ist „OrdiPilot … ausführen“ (keine Karten-Route), Eingabe leer. Setzt iOS den Ort nicht selbst: <b>+</b> → Auslöser <b>Ankommen</b>/<b>Verlassen</b> → Adresse einfügen → <b>Sofort ausführen</b> → Aktion „Kurzbefehl ausführen“.</p>
+      <p><b>3. Ortung erlauben:</b> Einstellungen → Datenschutz → Ortungsdienste → Kurzbefehle → <b>Immer</b>.</p>
+      <p><b>4. Test:</b> Bei „OrdiPilot Klinik“ einmal ▶︎ tippen – in Dropbox erscheint eine Zeile in <code>standort.txt</code> (eine einzelne „klinik“-Zeile legt keinen Einsatz an). Nach dem ersten echten Dienst steht oben „zuletzt …“.</p>
+      ${copy('Pfad der Datei',LOG)}
+      <p class="help">Bestätigte und abgerechnete Einsätze werden nie verändert. Erkannte Zeiten erscheinen beim Einsatz mit 📍 und werden erst beim Bestätigen übernommen. Ein gelöschter, automatisch erkannter Einsatz wird nicht wieder angelegt. Nie mit „ankunft“/„abfahrt“ testen – das würde für heute Zeiten vorschlagen.</p>
       <p class="help"><b>Zahlungsnachweise:</b> Liegt in Dropbox unter Zahlungsnachweise/&lt;Jahr&gt; eine Datei „JJJJ-MM_Zahlungsnachweis…“, wird der Monat automatisch als bezahlt markiert.</p>
-      <p class="help"><b>Monatsende:</b> In den letzten Tagen des Monats erinnert die Übersicht an die Honorarnote. Zusätzlich möglich: Kurzbefehle → Automation → <b>Monatlich</b> (letzter Tag, 18:00) → <b>Mitteilung anzeigen</b> „Honorarnote erstellen“.</p>
+      <p class="help"><b>Monatsende:</b> In den letzten Tagen des Monats erinnert die Übersicht an die Honorarnote. Zusätzlich als Kurzbefehl (Kurzbefehle → <b>+</b>):</p>
+      ${copy('Prompt Monatsende',T.monthEnd)}
     </div>`;
     if(wasOpen)el.open=true;
-    el.querySelector('#v616Copy').onclick=async()=>{try{await navigator.clipboard.writeText(LOG);el.querySelector('#v616Copy').textContent='Kopiert'}catch(_){prompt('Pfad kopieren:',LOG)}};
+    el.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{const t=b.dataset.copy;try{await navigator.clipboard.writeText(t);b.textContent='Kopiert ✓';setTimeout(()=>{b.textContent='Kopieren'},1800)}catch(_){prompt('Kopieren:',t)}});
   }
 
   // ---- Logo in der Kopfzeile ----
@@ -2481,6 +2496,7 @@ setupV67();
 .v616-guide p{margin:8px 0;font-size:14px}.v616-guide ol{margin:6px 0 10px;padding-left:20px;font-size:14px;display:grid;gap:6px}
 .v616-guide code{font-size:12px;background:#f2f2f7;border-radius:6px;padding:1px 5px;word-break:break-all}
 .v616-path{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}.v616-path code{flex:1 1 220px}
+.v618-copy{margin:6px 0}.v618-copy-label{font-size:12px;font-weight:700;color:#8e8e93;margin-bottom:2px}.v618-copy-row{display:flex;gap:8px;align-items:center}.v618-copy-row code{flex:1;display:block;padding:6px 8px!important;line-height:1.4;font-family:inherit;font-size:13px!important;word-break:normal!important;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all}.v618-copy-row .btn{flex:0 0 auto;min-height:36px;padding:6px 12px}.v618-sep{border:0;border-top:1px solid #e5e5ea;margin:10px 0}
 .logo.brand-mark{background:linear-gradient(135deg,#2f8cff,#3b3fd6)!important}`;
     document.head.appendChild(st);
   }

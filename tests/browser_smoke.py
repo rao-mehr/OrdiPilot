@@ -437,6 +437,9 @@ def main():
         check("Betriebsausgaben werden synchronisiert", len(dbx.get(DATA).get("expenses", [])) == 1)
         check("Neues Logo in der Kopfzeile", page.evaluate("()=>document.querySelector('.logo.brand-mark').dataset.v616==='1'"))
         check("Standort-Anleitung vorhanden", page.evaluate("()=>!!document.getElementById('v616Guide')"))
+        g = page.evaluate("()=>{const el=document.getElementById('v616Guide');return {n:el.querySelectorAll('[data-copy]').length,t:el.textContent}}")
+        check("Anleitung: Kopieren-Knöpfe für Namen, Prompts, Pfad", g["n"] >= 11, str(g["n"]))
+        check("Anleitung nutzt Ordinationsadresse und Dropbox-Pfad", "standort.txt" in g["t"] and "OrdiPilot Abfahrt" in g["t"] and "Automation → + → Ankommen" not in g["t"])
         check("Keine JavaScript-Fehler (Automatik)", not errors, "; ".join(errors)[:300])
         ctx.close()
 
