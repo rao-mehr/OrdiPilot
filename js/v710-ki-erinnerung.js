@@ -17,7 +17,7 @@
   };
 
   /* Übernimmt exportierte Belege in die Ausgabenliste.
-     exportData: { records: [{ id, date:'YYYY-MM-DD', provider, number, description, gross }] }
+     exportData: { records: [{ id, date:'YYYY-MM-DD', provider, number, description, gross, file }] }
      opts: { share, expenses, deleted, now }
      - neue Belege werden angehängt, bestehende (gleiche id) aktualisiert
      - ein von Hand geänderter Anteil (shareManual) bleibt erhalten
@@ -37,15 +37,26 @@
       const id = 'ki-' + String(r.id).replace(/[^A-Za-z0-9_-]/g, '');
       if (deleted[id]) continue;
       const note = [r.provider, r.number].filter(Boolean).join(' · ');
+      const receipt = /^\//.test(String(r.file || '')) ? String(r.file) : ''; // Dropbox-Pfad des Belegs (für das Steuerpaket)
       const cur = byId.get(id);
       if (!cur) {
-        const x = { id, date: r.date, category: CATEGORY, note, amount: gross, share, source: 'ki', updatedAt: now };
+        const x = {
+          id,
+          date: r.date,
+          category: CATEGORY,
+          note,
+          amount: gross,
+          share,
+          receipt,
+          source: 'ki',
+          updatedAt: now,
+        };
         list.push(x);
         byId.set(id, x);
         added++;
         continue;
       }
-      const want = { date: r.date, amount: gross, note, share: cur.shareManual ? cur.share : share };
+      const want = { date: r.date, amount: gross, note, receipt, share: cur.shareManual ? cur.share : share };
       if (Object.keys(want).some(k => cur[k] !== want[k])) {
         Object.assign(cur, want, { updatedAt: now });
         updated++;
