@@ -914,7 +914,7 @@
         'Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
     document.querySelectorAll('.footer-note').forEach(el => {
       if (/Version/i.test(el.textContent))
-        el.textContent = el.textContent.replace(/Version\s*[0-9.]+/i, 'Version 7.0.1');
+        el.textContent = el.textContent.replace(/Version\s*[0-9.]+/i, 'Version 7.1.0');
     });
     applyRecipientToLegacy(state.settings.activeRecipientId, false);
     if (window.setRecipientName) {

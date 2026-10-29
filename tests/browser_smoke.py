@@ -575,6 +575,36 @@ def main():
         check("Keine JavaScript-Fehler (Standort-Bereinigung)", not errors, "; ".join(errors)[:300])
         ctx.close()
 
+        print("14) KI-Ausgaben in der Steuer-Übersicht, Erinnerungen per Mail")
+        dbx = FakeDropbox(); dbx.put(DATA, json.dumps(cloud).encode())
+        dbx.put(SYSTEM + "/Import/ki-ausgaben.json", json.dumps({"version": 1, "records": [
+            {"id": "openai-ABC123", "date": "2026-09-03", "provider": "OpenAI / ChatGPT", "number": "ABC123", "gross": 23.0},
+            {"id": "anthropic-2358", "date": "2026-10-01", "provider": "Anthropic / Claude", "number": "2358", "gross": 21.6}]}).encode())
+        local = json.loads(json.dumps(cloud)); local["settings"] = dict(backup["settings"], **{k: v for k, v in local["settings"].items() if v})
+        ctx, page, errors = new_page(browser, base, dbx, local)
+        page.evaluate("()=>syncWithDropbox({interactive:true})")
+        after = dbx.get(DATA)
+        ki = [x for x in after.get("expenses", []) if x.get("source") == "ki"]
+        check("KI-Belege als Betriebsausgaben übernommen (auch in Dropbox)", len(ki) == 2 and all(x["share"] == 50 for x in ki), str(ki)[:200])
+        check("Betriebsausgaben-Bereich automatisch eingeschaltet", after["settings"].get("expensesEnabled") is True)
+        check("Status nennt die Übernahme", "KI-Beleg" in page.evaluate("()=>document.getElementById('dropboxStatus')?.textContent||''"))
+        page.evaluate("()=>{document.querySelector('[data-tab=invoice]').click();ordipilotTax.setYear(2026);document.getElementById('v614Exp').open=true}")
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        check("Steuer: 50 % von 44,60 € = 22,30 € als Ausgabe", abs(rep["totals"]["other"] - 22.3) < 0.001, str(rep["totals"]["other"]))
+        page.fill("#v710KiShare", "40"); page.dispatch_event("#v710KiShare", "change")
+        rep = page.evaluate("()=>ordipilotTax.report()")
+        check("Anteil ändern rechnet alle KI-Belege neu (40 % = 17,84 €)", abs(rep["totals"]["other"] - 17.84) < 0.001, str(rep["totals"]["other"]))
+        page.evaluate("()=>syncWithDropbox({interactive:true})")
+        check("Zweiter Sync: keine Duplikate", len([x for x in dbx.get(DATA)["expenses"] if x.get("source") == "ki"]) == 2)
+        check("Erinnerungs-Einstellungen sichtbar (Honorar)", page.locator("#v710Remind").count() == 1)
+        page.evaluate("()=>document.getElementById('v710Remind').open=true")
+        page.fill("#v710RemindDays", "30"); page.dispatch_event("#v710RemindDays", "change")
+        page.evaluate("()=>syncWithDropbox({interactive:true})")
+        st = dbx.get(DATA)["settings"]
+        check("Erinnerungs-Einstellungen in Dropbox (fürs Google-Skript)", st.get("reminderPaymentDays") == 30 and st.get("reminderMail", True) is not False, str({k: st.get(k) for k in ["reminderMail", "reminderPaymentDays"]}))
+        check("Keine JavaScript-Fehler (KI/Erinnerungen)", not errors, "; ".join(errors)[:300])
+        ctx.close()
+
         print("12) Update von der installierten Einzeldatei-Version (6.18.1) auf die aufgeteilte Version")
         tmp12 = tempfile.mkdtemp(); app12 = os.path.join(tmp12, "app"); os.makedirs(app12)
         rev12 = subprocess.run(["git", "-C", ROOT, "log", "--all", "-1", "--format=%H", "--grep=V6.18.1: Standort-Anleitung"], capture_output=True, text=True).stdout.strip()
