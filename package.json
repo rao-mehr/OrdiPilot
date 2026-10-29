@@ -1,0 +1,15 @@
+{
+  "name": "ordipilot",
+  "private": true,
+  "description": "Prüfwerkzeuge für OrdiPilot (nur Entwicklung/CI – die App selbst braucht keine Pakete).",
+  "scripts": {
+    "check": "prettier --check \"js/*.js\" \"css/*.css\" && node tests/static_check.mjs && node --test tests/*.test.mjs",
+    "format": "prettier --write \"js/*.js\" \"css/*.css\""
+  },
+  "devDependencies": {
+    "acorn": "8.12.1",
+    "acorn-walk": "8.3.4",
+    "eslint": "8.57.0",
+    "prettier": "3.3.3"
+  }
+}

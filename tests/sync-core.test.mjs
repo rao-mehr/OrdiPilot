@@ -1,15 +1,13 @@
-// Unit-Tests für den Sync-Kern (#v612-sync-core in index.html). Start: node --test tests/
+// Unit-Tests für den Sync-Kern (js/v612-sync-core.js). Start: node --test tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const m = html.match(/<script id="v612-sync-core">([\s\S]*?)<\/script>/);
-assert.ok(m, 'Sync-Kern nicht in index.html gefunden');
+const code = fs.readFileSync(new URL('../js/v612-sync-core.js', import.meta.url), 'utf8');
 const sandbox = { console };
 vm.createContext(sandbox);
-vm.runInContext(m[1], sandbox);
+vm.runInContext(code, sandbox);
 const C = sandbox.OrdiPilotSyncCore;
 
 // Einfacher, aber realistischer Merge: Vereinigung nach id bzw. key, neuerer Datensatz gewinnt.

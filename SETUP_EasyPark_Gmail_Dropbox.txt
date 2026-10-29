@@ -1,3 +1,5 @@
+HINWEIS (Oktober 2026): Diese Anleitung beschreibt die Ersteinrichtung. Die EasyPark-Automatik läuft bereits im Apps-Script-Projekt „Vertretungsabrechnung EasyPark“; die alten Code-Stände liegen in archiv/.
+
 VERTRETUNGSABRECHNUNG V4 - EasyPark Automatik
 
 ZIEL
@@ -21,7 +23,7 @@ Für Steuerunterlagen ist die spätere EasyPark-Quittung vorzuziehen. In EasyPar
 
 GOOGLE APPS SCRIPT EINRICHTEN
 1. script.google.com öffnen und neues Projekt erstellen.
-2. Inhalt von EasyPark_Automation.gs nach Code.gs kopieren.
+2. Inhalt von archiv/EasyPark_Automation_V4_5_Migrated.gs (letzter Stand im Repository) nach Code.gs kopieren.
 3. Projekteinstellungen -> Zeitzone Europe/Vienna.
 4. Unter Script Properties setzen:
    DROPBOX_APP_KEY       = App Key der Dropbox Developer App

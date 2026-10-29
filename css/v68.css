@@ -1,0 +1,401 @@
+.invoice-filehint {
+  font-size: 11px;
+  color: #8e8e93;
+  margin-top: 5px;
+  max-width: 240px;
+  line-height: 1.25;
+  word-break: break-word;
+}
+.v68-plan-dialog {
+  padding: 0;
+  overflow: hidden;
+  width: min(720px, calc(100% - 20px));
+  max-height: 94dvh;
+  border-radius: 22px;
+}
+.v68-plan-shell {
+  display: flex;
+  flex-direction: column;
+  max-height: 94dvh;
+  background: #f6f8fc;
+}
+.v68-plan-head {
+  position: relative;
+  padding: 18px 58px 14px 18px;
+  background: #fff;
+  border-bottom: 1px solid rgba(60, 60, 67, 0.1);
+}
+.v68-plan-head h3 {
+  margin: 0;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+.v68-plan-head p {
+  margin: 4px 0 0;
+  color: #757b88;
+  font-size: 13px;
+}
+.v68-plan-body {
+  overflow: auto;
+  padding: 14px 16px 18px;
+  overscroll-behavior: contain;
+}
+.v68-block {
+  background: #fff;
+  border: 1px solid rgba(60, 60, 67, 0.1);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 5px 18px rgba(31, 45, 75, 0.04);
+}
+.v68-step-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.v68-step-no {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: #eaf3ff;
+  color: #0a84ff;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+.v68-cal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.v68-cal-head strong {
+  font-size: 17px;
+}
+.v68-cal-navs {
+  display: flex;
+  gap: 5px;
+}
+.v68-cal-navs button {
+  border: 0;
+  background: #f2f2f7;
+  color: #0a84ff;
+  border-radius: 10px;
+  height: 34px;
+  min-width: 34px;
+  font-weight: 800;
+}
+.v68-cal-navs .today {
+  padding: 0 10px;
+  font-size: 12px;
+}
+.v68-week,
+.v68-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.v68-week span {
+  text-align: center;
+  font-size: 10px;
+  color: #8e8e93;
+  font-weight: 800;
+  padding: 3px 0 5px;
+}
+.v68-day {
+  position: relative;
+  border: 0;
+  background: transparent;
+  border-radius: 12px;
+  min-height: 46px;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+.v68-day.out {
+  opacity: 0.28;
+}
+.v68-day.today {
+  box-shadow: inset 0 0 0 1px #0a84ff;
+  color: #0a84ff;
+}
+.v68-day.selected {
+  background: #0a84ff;
+  color: #fff;
+  box-shadow: none;
+}
+.v68-day.has-existing {
+  background: #f2f2f7;
+  color: #9a9aa0;
+}
+.v68-day.has-existing:after {
+  content: '•';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+}
+.v68-day:disabled {
+  cursor: default;
+}
+.v68-weekday-picks {
+  display: flex;
+  gap: 6px;
+  overflow: auto;
+  padding-top: 10px;
+}
+.v68-weekday-picks button {
+  border: 1px solid #dce5f1;
+  background: #f8fbff;
+  color: #356da8;
+  border-radius: 999px;
+  padding: 7px 10px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 750;
+}
+.v68-selected-summary {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: #f5f8fc;
+  color: #525b6b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.v68-selected-summary strong {
+  color: #1d1d1f;
+}
+.v68-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+.v68-preset {
+  border: 1px solid #dbe5f2;
+  background: #f8fbff;
+  border-radius: 14px;
+  padding: 10px 6px;
+  color: #245f9f;
+  font-weight: 800;
+  min-height: 58px;
+}
+.v68-preset small {
+  display: block;
+  color: #7c8491;
+  font-size: 10px;
+  font-weight: 650;
+  margin-top: 2px;
+}
+.v68-preset.active {
+  background: #0a84ff;
+  color: #fff;
+  border-color: #0a84ff;
+}
+.v68-preset.active small {
+  color: rgba(255, 255, 255, 0.84);
+}
+.v68-time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 10px;
+}
+.v68-time-row label {
+  font-size: 11px;
+  color: #7a7f89;
+  font-weight: 750;
+}
+.v68-time-row input {
+  font-size: 17px;
+  font-weight: 750;
+  text-align: center;
+  width: 100%;
+  margin-top: 4px;
+}
+.v68-note {
+  margin-top: 10px;
+}
+.v68-note label {
+  font-size: 11px;
+  color: #7a7f89;
+  font-weight: 750;
+}
+.v68-note input {
+  width: 100%;
+  margin-top: 4px;
+}
+.v68-auto-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 10px;
+  color: #687286;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.v68-auto-note b {
+  color: #2573c9;
+}
+.v68-plan-actions {
+  display: flex;
+  gap: 8px;
+  padding: 11px 16px calc(12px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid rgba(60, 60, 67, 0.1);
+}
+.v68-plan-actions .btn {
+  flex: 1;
+}
+.v68-plan-actions .primary {
+  flex: 1.5;
+}
+@media (max-width: 620px) {
+  .v68-plan-dialog {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 0;
+    border-radius: 22px 22px 0 0;
+    max-height: 94dvh;
+  }
+  .v68-plan-shell {
+    max-height: 94dvh;
+  }
+  .v68-plan-body {
+    padding: 12px 13px 16px;
+  }
+  .v68-block {
+    padding: 12px;
+  }
+  .v68-day {
+    min-height: 43px;
+  }
+  .v68-presets {
+    gap: 5px;
+  }
+  .v68-preset {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+}
+
+/* ===== V6.10 per-day planning times ===== */
+.v610-help {
+  font-size: 12px;
+  color: #687286;
+  line-height: 1.45;
+  margin: -2px 0 11px;
+}
+.v610-bulk-label {
+  font-size: 11px;
+  color: #7a7f89;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 2px 0 7px;
+}
+.v610-day-times {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+}
+.v610-empty {
+  padding: 14px;
+  border: 1px dashed #cfd9e7;
+  border-radius: 14px;
+  color: #8a909c;
+  text-align: center;
+  font-size: 12px;
+  background: #fafcff;
+}
+.v610-day-card {
+  border: 1px solid #dfe6ef;
+  border-radius: 16px;
+  padding: 11px;
+  background: linear-gradient(180deg, #fff, #fbfdff);
+  box-shadow: 0 3px 12px rgba(40, 65, 100, 0.035);
+}
+.v610-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.v610-day-date {
+  font-weight: 850;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.v610-day-date small {
+  display: block;
+  color: #8a909c;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+.v610-day-remove {
+  border: 0;
+  background: #f2f2f7;
+  color: #8e8e93;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1;
+}
+.v610-row-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.v610-row-preset {
+  border: 1px solid #dce5f1;
+  background: #f8fbff;
+  color: #356da8;
+  border-radius: 11px;
+  padding: 7px 3px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.v610-row-preset.active {
+  background: #0a84ff;
+  border-color: #0a84ff;
+  color: #fff;
+}
+.v610-row-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.v610-row-times label {
+  display: block;
+  font-size: 10px;
+  color: #7a7f89;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+.v610-row-times input {
+  width: 100%;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+  min-height: 44px;
+}
+@media (max-width: 620px) {
+  .v610-day-card {
+    padding: 10px;
+  }
+  .v610-row-preset {
+    font-size: 10.5px;
+    padding: 7px 2px;
+  }
+  .v610-row-times input {
+    font-size: 16px;
+  }
+}

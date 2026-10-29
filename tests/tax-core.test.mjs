@@ -1,4 +1,4 @@
-// Unit-Tests für den Steuer-Kern (#v614-tax in index.html). Start: node --test tests/*.test.mjs
+// Unit-Tests für den Steuer-Kern (js/v614-tax.js). Start: node --test tests/*.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -7,8 +7,8 @@ import vm from 'node:vm';
 // Werte aus dem VM-Kontext in normale Objekte überführen (deepEqual prüft sonst die Prototypen)
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const src = html.match(/<script id="v614-tax">([\s\S]*?)<\/script>/)[1];
+const code = fs.readFileSync(new URL('../js/v614-tax.js', import.meta.url), 'utf8');
+const src = code;
 const sb = { console };
 vm.createContext(sb);
 vm.runInContext(src, sb);

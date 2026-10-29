@@ -1,13 +1,13 @@
-// Unit-Tests für die Automatik (#v616-auto in index.html). Start: node --test tests/*.test.mjs
+// Unit-Tests für die Automatik (js/v616-auto.js). Start: node --test tests/*.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const code = fs.readFileSync(new URL('../js/v616-auto.js', import.meta.url), 'utf8');
 const sb = { console };
 vm.createContext(sb);
-vm.runInContext(html.match(/<script id="v616-auto">([\s\S]*?)<\/script>/)[1], sb);
+vm.runInContext(code, sb);
 const A = sb.OrdiPilotAutoCore;
 const plain = (v) => JSON.parse(JSON.stringify(v));
 

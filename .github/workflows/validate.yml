@@ -19,6 +19,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Prüfwerkzeuge installieren (fest versioniert)
+        run: npm ci --no-audit --no-fund
+      - name: Einheitliche Formatierung
+        run: npx prettier --check "js/*.js" "css/*.css"
+      - name: Statische Prüfung (undefinierte Namen, toter Code, doppelte Handler)
+        run: node tests/static_check.mjs
       - name: Unit- und Release-Tests (Sync-Kern, Struktur, Datenschutz)
         run: node --test tests/*.test.mjs
       - uses: actions/setup-python@v5
@@ -26,7 +32,9 @@ jobs:
           python-version: "3.12"
       - name: Browser installieren
         run: |
-          pip install playwright==1.*
+          pip install playwright==1.* pypdf
           python -m playwright install --with-deps chromium
       - name: Browser-Test der ganzen App mit simulierter Dropbox
         run: python tests/browser_smoke.py
+      - name: Charakterisierung (Verhalten unverändert)
+        run: python tests/characterize.py
