@@ -12,14 +12,22 @@
   const WATCH = { ki: 26, easypark: 24, check: 26 }; // Stunden ohne Lebenszeichen, bis gewarnt wird
   const STALE_HOURS = 36; // so lange darf die Status-Datei alt sein
 
-  /* status: Inhalt von automatik-status.json; nowMs: aktuelle Zeit.
-     → { known, stale, ok, items:[{key,label,last,ok}] } */
-  function evaluateStatus(status, nowMs) {
+  /* status: Inhalt von automatik-status.json; nowMs: aktuelle Zeit;
+     firstSeen: { key: ISO } – seit wann die App eine Automatik ohne jede Meldung sieht.
+     Noch nie gelaufen zählt erst als Problem, wenn die Frist seit dem ersten Sehen verstrichen ist
+     (frisch eingerichtete Automatik → „noch keine Meldung“ statt Fehlalarm).
+     → { known, stale, ok, items:[{key,label,last,ok,pending}] } */
+  function evaluateStatus(status, nowMs, firstSeen) {
     if (!status || !Array.isArray(status.components)) return { known: false, stale: false, ok: false, items: [] };
     const age = h => (nowMs - new Date(h).getTime()) / 36e5;
     const items = status.components.map(c => {
       const max = WATCH[c.key] || 26;
-      return { key: c.key, label: c.label || c.key, last: c.last || '', ok: !!c.last && age(c.last) <= max };
+      if (!c.last) {
+        const seen = (firstSeen || {})[c.key];
+        const pending = !seen || age(seen) <= max;
+        return { key: c.key, label: c.label || c.key, last: '', ok: pending, pending };
+      }
+      return { key: c.key, label: c.label || c.key, last: c.last, ok: age(c.last) <= max, pending: false };
     });
     const stale = !status.updatedAt || age(status.updatedAt) > STALE_HOURS;
     return { known: true, stale, ok: !stale && items.every(i => i.ok), items, updatedAt: status.updatedAt || '' };
@@ -203,9 +211,20 @@
   let status = null,
     note = '',
     bankInfo = '';
+  let firstSeen = {};
   try {
     status = JSON.parse(localStorage.getItem(STORE) || 'null');
+    firstSeen = JSON.parse(localStorage.getItem(STORE + '-erst') || '{}') || {};
   } catch (_) {}
+  function noteFirstSeen() {
+    for (const c of (status && status.components) || []) {
+      if (c.last) delete firstSeen[c.key];
+      else if (!firstSeen[c.key]) firstSeen[c.key] = now();
+    }
+    try {
+      localStorage.setItem(STORE + '-erst', JSON.stringify(firstSeen));
+    } catch (_) {}
+  }
   const fmt = iso => {
     if (!iso) return '–';
     const d = new Date(iso);
@@ -221,12 +240,13 @@
       try {
         localStorage.setItem(STORE, JSON.stringify(status));
       } catch (_) {}
+      noteFirstSeen();
     } catch (e) {
       console.warn('Automatik-Status nicht lesbar', e);
     }
   }
   function problems() {
-    const ev = W.evaluateStatus(status, Date.now());
+    const ev = W.evaluateStatus(status, Date.now(), firstSeen);
     if (!ev.known) return [];
     if (ev.stale) return [`Google-Skript meldet sich seit ${fmt(ev.updatedAt)} nicht`];
     return ev.items.filter(i => !i.ok).map(i => `${i.label} läuft nicht`);
@@ -333,7 +353,7 @@
       el.className = 'v618-gmail';
       anchor.insertAdjacentElement('afterend', el);
     }
-    const ev = W.evaluateStatus(status, Date.now()),
+    const ev = W.evaluateStatus(status, Date.now(), firstSeen),
       wasOpen = el.open;
     const probs = problems();
     const badge = !ev.known
@@ -343,9 +363,10 @@
         : '<span class="ok">alles ok</span>';
     const rows = ev.known
       ? ev.items
-          .map(
-            i =>
-              `<div class="v720-row"><span>${esc(i.label)}</span><span class="${i.ok && !ev.stale ? 'ok' : 'v720-warn'}">${i.ok && !ev.stale ? '✓' : '!'} ${esc(fmt(i.last))}</span></div>`
+          .map(i =>
+            i.pending && !ev.stale
+              ? `<div class="v720-row"><span>${esc(i.label)}</span><span>noch keine Meldung</span></div>`
+              : `<div class="v720-row"><span>${esc(i.label)}</span><span class="${i.ok && !ev.stale ? 'ok' : 'v720-warn'}">${i.ok && !ev.stale ? '✓' : '!'} ${esc(i.last ? fmt(i.last) : 'nie')}</span></div>`
           )
           .join('') +
         (ev.stale
