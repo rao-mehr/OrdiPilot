@@ -359,7 +359,11 @@ function migrateEasyParkPathsToFullDropbox() {
 // Migration 2026-10-13: protects the index against concurrent imports.
 function processEasyParkQuery_(query) {
   const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  // Ist das Skript gerade belegt (z. B. KI-Abgleich), diese Runde überspringen – 15 Minuten später läuft es wieder.
+  if (!lock.tryLock(30000)) {
+    console.log('EasyPark: Skript belegt, Runde übersprungen.');
+    return;
+  }
   try {
     return processEasyParkQueryUnlocked_(query);
   } finally {
