@@ -198,7 +198,7 @@ function opDueReminders_(data, now, props) {
 
 function opArg_(obj) {
   // Dropbox verlangt reines ASCII im Header – Umlaute maskieren
-  return JSON.stringify(obj).replace(/[\u007f-￿]/g, function (c) { return '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4); });
+  return JSON.stringify(obj).replace(/[\u007f-\uffff]/g, function (c) { return '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4); });
 }
 
 function opDownloadText_(path) {
