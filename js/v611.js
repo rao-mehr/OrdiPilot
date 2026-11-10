@@ -314,6 +314,7 @@
       'Dropbox-Synchronisierung': ['cloud', 'Daten zwischen Geräten synchronisieren', 'Verbindungen'],
       'EasyPark-Automatik': ['car', 'Parkbelege automatisch übernehmen', 'Verbindungen'],
       'Apple Kalender · Vertretungen': ['calendar', 'Kalender-Synchronisierung und Navigation', 'Verbindungen'],
+      'Dienstplan (Klinik)': ['calendar', 'Name, Dienstplan-PDF und Kalender', 'Verbindungen'],
     };
     const cards = [...grid.querySelectorAll(':scope>.card')],
       menu = document.createElement('div');
@@ -914,7 +915,7 @@
         'Einsätze nach Monaten klar gegliedert – Status, Zeit, Honorar, Parken und Bemerkung auf einen Blick.';
     document.querySelectorAll('.footer-note').forEach(el => {
       if (/Version/i.test(el.textContent))
-        el.textContent = el.textContent.replace(/Version\s*[0-9.]+/i, 'Version 7.2.1');
+        el.textContent = el.textContent.replace(/Version\s*[0-9.]+/i, 'Version 7.3.0');
     });
     applyRecipientToLegacy(state.settings.activeRecipientId, false);
     if (window.setRecipientName) {
