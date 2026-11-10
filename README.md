@@ -11,6 +11,7 @@ Persönliche Web-App (PWA) für ärztliche Vertretungsdienste: Einsätze, Parkbe
 | `css/` | Gestaltung |
 | `service-worker.js`, `manifest.webmanifest`, `icons/` | Offline-Betrieb und Installation am Home-Bildschirm |
 | `apps-script/` | Code im Google-Apps-Script-Projekt „Vertretungsabrechnung EasyPark“: `Honorarnote_Versand.gs` (Versand über Gmail, Einrichtung: `SETUP_Gmail_Versand.md`), `EasyPark.gs` (laufender Stand des EasyPark-Imports), `OrdiPilot_Automatik.gs` (KI-Belege nach Dropbox, Mail-Erinnerungen), `appsscript.json`. Geheimnisse liegen nur in den Script-Eigenschaften bei Google. |
+| `vendor/` | pdf.js (Mozilla, Apache-2.0), nur lokal im Browser zum Lesen des Dienstplan-PDFs |
 | `SETUP_*` | Einrichtungsanleitungen |
 | `tests/` | Unit-Tests (`node --test tests/*.test.mjs`), Browser-Tests (`python tests/browser_smoke.py`) und Charakterisierung (`python tests/characterize.py`) |
 | `archiv/` | Ältere Versionen, nicht mehr in Verwendung |
