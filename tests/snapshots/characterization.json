@@ -980,7 +980,7 @@
    "token": "geheim"
   }
  ],
- "header_footer": "Version 7.5.0 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.",
+ "header_footer": "Version 7.5.1 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.",
  "invoice_08_button": {
   "disabled": false,
   "text": "Honorarnote erstellen & senden"
@@ -2688,6 +2688,6 @@
    "v730Upload",
    "v730Url"
   ],
-  "text": "Einstellungen\nVersion 7.5.0 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.\nABRECHNUNG & HONORAR\nAbrechnung\nStundensatz, Rücklage und steuerliche Hinweise\n›\nMeine Rechnungsdaten\nAbsender, Bank- und Steuerdaten\n›\nRechnungsempfänger\nEmpfänger, Anrede und Honorarnoten-Texte verwalten\n›\nHonorarnote · Versand\nVersand, Ablage und Kurzbefehl\n›\nEINSÄTZE\nZeitprofile für Einsätze\nVormittag, Nachmittag und Ganztag\n›\nVERBINDUNGEN\nDropbox-Synchronisierung\nDaten zwischen Geräten synchronisieren\n›\nEasyPark-Automatik\nParkbelege automatisch übernehmen\n›\nApple Kalender · Vertretungen\nKalender-Synchronisierung und Navigation\n›\nDienstplan (Klinik)\nName, Dienstplan-PDF und Kalender\n›\nWEITERE\niPhone / iPad\nEinstellungen\n›"
+  "text": "Einstellungen\nVersion 7.5.1 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.\nABRECHNUNG & HONORAR\nAbrechnung\nStundensatz, Rücklage und steuerliche Hinweise\n›\nMeine Rechnungsdaten\nAbsender, Bank- und Steuerdaten\n›\nRechnungsempfänger\nEmpfänger, Anrede und Honorarnoten-Texte verwalten\n›\nHonorarnote · Versand\nVersand, Ablage und Kurzbefehl\n›\nEINSÄTZE\nZeitprofile für Einsätze\nVormittag, Nachmittag und Ganztag\n›\nVERBINDUNGEN\nDropbox-Synchronisierung\nDaten zwischen Geräten synchronisieren\n›\nEasyPark-Automatik\nParkbelege automatisch übernehmen\n›\nApple Kalender · Vertretungen\nKalender-Synchronisierung und Navigation\n›\nDienstplan (Klinik)\nName, Dienstplan-PDF und Kalender\n›\nWEITERE\niPhone / iPad\nEinstellungen\n›"
  }
 }

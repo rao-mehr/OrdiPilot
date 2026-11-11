@@ -118,13 +118,26 @@
     host.innerHTML = `<div class="v750-imp-head"><strong>Importieren</strong><small>Dienstplan &amp; Kalender</small></div>
 <div class="v750-imp-row">
 <button type="button" class="btn" data-v750="pdf"><b>Dienstplan (PDF)</b><small>automatisch auslesen</small></button>
+<button type="button" class="btn" data-v750="last" hidden><b>Letzter Plan</b><small>erneut lesen</small></button>
 <button type="button" class="btn" data-v750="cal"><b>Kalender verbinden</b><small>Dienste &amp; Urlaub</small></button>
 </div><div class="help" id="v750Status" role="status" aria-live="polite"></div>`;
+    window.OrdiPilotPlan?.lastName?.().then(n => {
+      const b = host.querySelector('[data-v750="last"]');
+      if (n && b) {
+        b.hidden = false;
+        b.querySelector('small').textContent = n.slice(0, 22);
+      }
+    });
     host.addEventListener('click', e => {
       const b = e.target.closest('[data-v750]');
       if (!b) return;
       if (b.dataset.v750 === 'pdf') window.OrdiPilotPlan?.upload?.();
-      else {
+      else if (b.dataset.v750 === 'last') {
+        window.OrdiPilotPlan?.reread?.().then(ok => {
+          if ($('v750Status') && !ok)
+            $('v750Status').textContent = 'Noch kein Plan gespeichert – bitte einmal „Dienstplan (PDF)“ wählen.';
+        });
+      } else {
         switchTab('settings');
         setTimeout(() => {
           const card = $('v730Card');
@@ -140,6 +153,44 @@
       if (el && ev.detail?.text) el.textContent = ev.detail.text;
     });
   }
+
+  /* ---- Liste: Klinikdienste (und Urlaub) der nächsten Wochen oberhalb der Einsätze ---- */
+  function klinikList() {
+    const P = window.OrdiPilotPlanCore,
+      A = window.OrdiPilotPlan,
+      root = $('v67ListView');
+    if (!P || !A || !root) return;
+    root.querySelector('.v750-klinik')?.remove();
+    const rows = [];
+    const d = new Date();
+    for (let i = 0; i < 45; i++) {
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const codes = P.dayInfo(A.plan(), iso).codes.filter(c => P.DISPLAY.has(c));
+      if (codes.length)
+        rows.push(
+          `<div class="v67-agenda-row"><div><div class="v67-agenda-time">${d.toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'short' })}</div></div><div>${codes.map(c => `<span class="v740-chip ${P.groupOf(c)}">${c}</span>`).join(' ')}</div></div>`
+        );
+      d.setDate(d.getDate() + 1);
+    }
+    if (!rows.length) return;
+    const box = document.createElement('div');
+    box.className = 'v67-agenda-group v750-klinik';
+    box.innerHTML = `<div class="v67-agenda-date">Klinikdienste · nächste 6 Wochen</div>${rows.join('')}`;
+    root.prepend(box);
+  }
+  OrdiPilotExt.extend(
+    'renderV67Agenda',
+    base =>
+      function () {
+        const out = base.apply(this, arguments);
+        try {
+          klinikList();
+        } catch (e) {
+          console.error('v750 Liste', e);
+        }
+        return out;
+      }
+  );
 
   function css() {
     if ($('v750-style')) return;
