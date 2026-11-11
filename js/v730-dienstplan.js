@@ -538,6 +538,13 @@
     ready: calendarReady,
     pending: () => P.calendarPlan(rawPlan(), written()),
     syncLeave: () => syncLeave(),
+    lastName: async () => (await lastPlan.get())?.name || null,
+    reread: async () => {
+      const r = await lastPlan.get();
+      if (!r) return false;
+      handleFile(new File([r.b], r.name || 'Dienstplan.pdf', { type: 'application/pdf' }));
+      return true;
+    },
     upload: () => {
       buildCard();
       $('v730Upload')?.click();
@@ -559,6 +566,36 @@
     });
   }
 
+  /* Zuletzt gelesenen Plan merken: ein Tipp liest ihn erneut, ohne Dateiauswahl. */
+  const lastPlan = {
+    open: () =>
+      new Promise((ok, no) => {
+        const r = indexedDB.open('op-lastplan', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('f');
+        r.onsuccess = () => ok(r.result);
+        r.onerror = () => no(r.error);
+      }),
+    async put(f) {
+      try {
+        const d = await lastPlan.open();
+        d.transaction('f', 'readwrite').objectStore('f').put({ b: f, name: f.name }, 'last');
+      } catch {
+        /* optional */
+      }
+    },
+    async get() {
+      try {
+        const d = await lastPlan.open();
+        return await new Promise(ok => {
+          const q = d.transaction('f').objectStore('f').get('last');
+          q.onsuccess = () => ok(q.result || null);
+          q.onerror = () => ok(null);
+        });
+      } catch {
+        return null;
+      }
+    },
+  };
   async function handleFile(file) {
     const name = String(state.settings.planName || '').trim();
     if (!name) {
@@ -731,7 +768,10 @@
     file.addEventListener('change', () => {
       const f = file.files && file.files[0];
       file.value = '';
-      if (f) handleFile(f);
+      if (f) {
+        lastPlan.put(f);
+        handleFile(f);
+      }
     });
     renderList();
   }
