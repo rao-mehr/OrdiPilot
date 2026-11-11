@@ -140,7 +140,7 @@ def main():
 
         # 2) Alle Ansichten
         def view(tab):
-            page.evaluate(f"()=>document.querySelector('[data-tab={tab}]').click()")
+            page.evaluate(f"()=>switchTab('{tab}')")
             page.wait_for_timeout(250)
             return page.evaluate("""(tab)=>{const p=document.getElementById('panel-'+tab);
               for(const d of p.querySelectorAll('details'))d.open=true;

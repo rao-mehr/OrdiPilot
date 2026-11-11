@@ -7,8 +7,9 @@ test('V7.5.0: Kalender ist erster Tab und Startseite, Import liegt darunter, Dat
   assert.match(html, /data-tab="calendar"/);
   assert.match(html, /<section class="panel active" id="panel-calendar">/);
   assert.match(html, /id="v750Import"/);
-  assert.ok(html.indexOf('data-tab="calendar"') < html.indexOf('data-tab="dashboard"'));
+  assert.doesNotMatch(html, /class="tab" data-tab="dashboard"/); // V7.6: Übersicht liegt im Tab „Einsätze“
+  assert.ok(html.indexOf('data-tab="calendar"') < html.indexOf('data-tab="entries"'));
   assert.doesNotMatch(html, /<section class="panel active" id="panel-dashboard">/);
   assert.match(read('service-worker.js'), /js\/v750-home\.js/);
-  assert.match(html, /js\/v750-home\.js\?v=754/);
+  assert.match(html, /js\/v750-home\.js\?v=760/);
 });
