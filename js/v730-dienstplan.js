@@ -538,6 +538,10 @@
     ready: calendarReady,
     pending: () => P.calendarPlan(rawPlan(), written()),
     syncLeave: () => syncLeave(),
+    upload: () => {
+      buildCard();
+      $('v730Upload')?.click();
+    },
   };
 
   /* ---- Vorschau-Dialog ---- */

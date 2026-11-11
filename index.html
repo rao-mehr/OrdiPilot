@@ -8,12 +8,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="OrdiPilot">
-<link rel="manifest" href="manifest.webmanifest?v=741">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=741">
+<link rel="manifest" href="manifest.webmanifest?v=750">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=750">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/ordipilot-v6161-32.png">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=741">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="icons/ordipilot-v6161-180.png?v=750">
 <title>OrdiPilot</title>
-<link rel="stylesheet" href="css/base.css?v=741">
+<link rel="stylesheet" href="css/base.css?v=750">
 </head>
 <body>
 <div class="app">
@@ -21,13 +21,27 @@
   <div class="brand"><div class="logo brand-mark" aria-label="OrdiPilot"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10.5" y="12.5" width="27" height="25" rx="6"/><path d="M16 9.5v6M32 9.5v6M10.5 20h27"/><path class="brand-route" d="m16.5 29 4.2 4.2 10.8-11"/></svg></div><div><h1>OrdiPilot</h1><div class="sub" id="globalSyncStatus">Einsätze · Abrechnung · Organisation · Status wird geprüft…</div></div></div>
 </header>
 <nav class="tabs no-print" aria-label="Hauptnavigation">
-  <button class="tab active" data-tab="dashboard"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3l8.5 7.5v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M9 21v-6h6v6"/></svg></span><span class="tab-label">Übersicht</span></button>
+  <button class="tab active" data-tab="calendar"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7 3v4M17 3v4M3.5 10h17M8 14h3M13 14h3M8 18h3"/></svg></span><span class="tab-label">Kalender</span></button>
+  <button class="tab" data-tab="dashboard"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3l8.5 7.5v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M9 21v-6h6v6"/></svg></span><span class="tab-label">Übersicht</span></button>
   <button class="tab" data-tab="entries"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7 3v4M17 3v4M3.5 10h17M8 14h3M13 14h3M8 18h3"/></svg></span><span class="tab-label">Einsätze</span></button>
   <button class="tab" data-tab="parking"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 15 1.3-5 2-3h7.4l2 3L19 15"/><rect x="3.5" y="14" width="17" height="5" rx="2"/><path d="M7 19v2M17 19v2M7.5 11h9"/></svg></span><span class="tab-label">Parken</span></button>
   <button class="tab" data-tab="invoice"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6zM9 8h6M9 16h6"/><path d="M14.5 11.2c-.5-.5-1.2-.7-2-.7-1.2 0-2 .5-2 1.2s.7 1.1 2 1.3 2 .6 2 1.3-.8 1.2-2 1.2c-.9 0-1.7-.2-2.2-.7M12.5 9.5v7"/></svg></span><span class="tab-label">Honorar</span></button>
   <button class="tab" data-tab="settings"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.05.05-2.83 2.83-.05-.05A1.7 1.7 0 0 0 15 19.36a1.7 1.7 0 0 0-1 .64 1.7 1.7 0 0 0-.36 1.05V21h-4v-.07A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.87.34l-.05.05-2.83-2.83.05-.05A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-.64-1 1.7 1.7 0 0 0-1.05-.36H3v-4h.07A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.05-.05 2.83-2.83.05.05A1.7 1.7 0 0 0 9 4.64a1.7 1.7 0 0 0 1-.64 1.7 1.7 0 0 0 .36-1.05V3h4v.07A1.7 1.7 0 0 0 15 4.64a1.7 1.7 0 0 0 1.87-.34l.05-.05 2.83 2.83-.05.05A1.7 1.7 0 0 0 19.36 9a1.7 1.7 0 0 0 .64 1 1.7 1.7 0 0 0 1.05.36H21v4h-.07A1.7 1.7 0 0 0 19.4 15Z"/></svg></span><span class="tab-label">Einstellungen</span></button>
 </nav>
-<section class="panel active" id="panel-dashboard">
+<section class="panel active" id="panel-calendar">
+<div class="v750-home">
+  <div class="v67-cal-body">
+    <div class="v67-segment"><button type="button" class="active" data-v67-view="month">Monat</button><button type="button" data-v67-view="list">Liste</button></div>
+    <div class="v67-month-view" id="v67MonthView">
+      <div class="v67-month-card"><div class="v67-month-head"><strong id="v67MonthTitle">–</strong><div class="v67-month-actions"><button type="button" id="v67PrevMonth" aria-label="Vorheriger Monat">‹</button><button type="button" class="today" id="v67Today">Heute</button><button type="button" id="v67NextMonth" aria-label="Nächster Monat">›</button></div></div><div class="v67-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="v67-month-grid" id="v67MonthGrid"></div></div>
+      <div class="v67-day-detail" id="v67DayDetail"></div>
+    </div>
+    <div class="v67-list-view" id="v67ListView"></div>
+  </div>
+<div class="v750-import" id="v750Import"></div>
+</div>
+</section>
+<section class="panel" id="panel-dashboard">
   <div class="v6-page-head"><div><h2 class="v6-page-title">Übersicht</h2><div class="v6-page-sub">Das Wichtigste zuerst. Details bleiben einen Tap entfernt.</div></div></div>
 
   <div id="v61NextShift" class="next-shift is-empty" role="button" tabindex="0" aria-label="Kalender öffnen"><div class="next-shift-kicker" id="v61NextKicker">NÄCHSTER EINSATZ</div><div class="next-shift-title" id="v61NextTitle">Kein Einsatz geplant</div><div class="next-shift-meta" id="v61NextMeta">Neue Termine planst du unter „Einsätze“.</div><div class="next-shift-actions no-print" id="v61NextActions" style="display:none"></div><div class="v67-next-hint" aria-hidden="true">›</div></div>
@@ -198,14 +212,6 @@
 
 <dialog id="v67CalendarDialog"><div class="v67-calendar-modal">
   <div class="v67-cal-top"><div class="v67-cal-kicker">Einsatzplanung</div><div class="v67-cal-title">Kalender</div><div class="v67-cal-sub" id="v67CalSub">Termine auf einen Blick</div><button type="button" class="modal-close-x" id="v67CalClose" aria-label="Schließen">×</button></div>
-  <div class="v67-cal-body">
-    <div class="v67-segment"><button type="button" class="active" data-v67-view="month">Monat</button><button type="button" data-v67-view="list">Liste</button></div>
-    <div class="v67-month-view" id="v67MonthView">
-      <div class="v67-month-card"><div class="v67-month-head"><strong id="v67MonthTitle">–</strong><div class="v67-month-actions"><button type="button" id="v67PrevMonth" aria-label="Vorheriger Monat">‹</button><button type="button" class="today" id="v67Today">Heute</button><button type="button" id="v67NextMonth" aria-label="Nächster Monat">›</button></div></div><div class="v67-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="v67-month-grid" id="v67MonthGrid"></div></div>
-      <div class="v67-day-detail" id="v67DayDetail"></div>
-    </div>
-    <div class="v67-list-view" id="v67ListView"></div>
-  </div>
 </div></dialog>
 
 <dialog id="entryDialog"><form method="dialog" class="entry-modal" id="entryForm"><div class="entry-modal-head"><h3 id="entryModalTitle">Einsatz planen</h3><div class="help" id="entryModalSub">Datum und voraussichtliche Arbeitszeit festlegen.</div><button type="button" class="modal-close-x" id="entryCloseTop" aria-label="Schließen">×</button></div><div class="entry-content"><div class="entry-confirm-banner" id="entryConfirmBanner"></div><div class="entry-date-card"><div class="entry-date-top"><span class="entry-date-title">DATUM</span><span class="entry-today-badge" id="entryTodayBadge">Heute</span></div><div class="entry-planner-calendar" id="entryPlannerCalendar"><div class="entry-planner-head"><button type="button" class="entry-cal-nav" id="entryCalPrev" aria-label="Vorheriger Monat">‹</button><strong id="entryCalTitle">September 2026</strong><div class="entry-cal-actions"><button type="button" class="entry-cal-today" id="entryCalToday">Heute</button><button type="button" class="entry-cal-nav" id="entryCalNext" aria-label="Nächster Monat">›</button></div></div><div class="entry-planner-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="entry-planner-grid" id="entryPlannerGrid"></div></div><div class="entry-selected-label">Ausgewählt</div><div class="entry-date-picker"><div class="entry-date-display"><span class="date-text" id="entryDateDisplay">–</span><span class="date-icon">▾</span></div><input id="fDate" class="entry-date-native" type="date" required></div><div class="entry-date-human" id="entryDateHuman"></div></div><div class="entry-section-label" id="entryTimeLabel">Voraussichtliche Arbeitszeit</div><div class="time-presets" id="timePresetBar"><button type="button" class="time-preset" data-time-preset="morning">Vormittag<small id="morningPresetText">–</small></button><button type="button" class="time-preset" data-time-preset="afternoon">Nachmittag<small id="afternoonPresetText">–</small></button><button type="button" class="time-preset" data-time-preset="fullday">Ganztags<small id="fullDayPresetText">–</small></button></div><div class="entry-time-grid"><div class="field entry-time-field"><label>Beginn</label><input id="fStart" type="time" step="300"></div><div class="field entry-time-field"><label>Ende</label><input id="fEnd" type="time" step="300"></div></div><div class="entry-wheel-hint" id="entryWheelHint">Profil wählen oder Beginn/Ende direkt antippen und individuell ändern.</div><div class="entry-plan-hint" id="entryPlanHint">Die Zeiten sind zunächst nur geplant. Am Einsatztag bestätigst du die tatsächlich geleistete Zeit.</div><div class="entry-break-row" id="entryBreakRow"><div class="field"><label>Pause (Minuten)</label><input id="fBreak" type="number" min="0" step="5" value="0" inputmode="numeric"></div></div><div class="entry-summary" id="entrySummary"><div><div class="entry-summary-label" id="entrySummaryLabel">Verrechenbar</div><div class="entry-summary-hours" id="calcHours">–</div><div class="help" id="calcExplain"></div></div><div class="entry-summary-gross" id="calcGross">–<small>Honorar</small></div></div><div class="entry-note field"><label>Bemerkung</label><input id="fNote" placeholder="optional"></div><details class="entry-advanced" id="entryAdvanced"><summary>Weitere Angaben</summary><div class="entry-advanced-body"><div class="formgrid"><div class="field"><label>Stundensatz (€)</label><input id="fRate" type="number" step="0.01" required></div><div class="field" id="manualHoursField"><label>Stunden direkt überschreiben</label><input id="fManual" type="number" min="0" step="0.25" placeholder="z. B. 7"></div></div><div class="help" style="margin-top:7px" id="manualHoursHelp">Direkte Stundenangabe überschreibt Beginn, Ende und Pause.</div></div></details></div><div class="entry-modal-actions"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" id="saveEntry" value="default">Einsatz planen</button></div></form></dialog>
@@ -213,10 +219,10 @@
 <dialog id="parkingDialog"><form method="dialog" class="modal parking-modal" id="parkingForm"><div class="modal-topbar"><h3 id="parkingModalTitle">Parkvorgang</h3><button type="button" class="modal-close-x" id="parkingCloseTop" aria-label="Schließen">×</button></div><div class="parking-content"><div class="parking-calendar" id="parkingCalendar"><div class="parking-cal-head"><button type="button" class="parking-cal-nav" id="parkingCalPrev" aria-label="Vorheriger Monat">‹</button><strong id="parkingCalTitle">–</strong><div style="display:flex;gap:5px"><button type="button" class="parking-cal-today" id="parkingCalToday">Heute</button><button type="button" class="parking-cal-nav" id="parkingCalNext" aria-label="Nächster Monat">›</button></div></div><div class="parking-cal-week"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="parking-cal-grid" id="parkingCalGrid"></div></div><div class="formgrid"><div class="field"><label>Datum</label><input id="pDate" type="date" required></div><div class="field"><label>Betrag (€)</label><input id="pAmount" type="number" min="0" step="0.01" inputmode="decimal" required></div><div class="field"><label>Anbieter</label><select id="pProvider"><option>HANDYPARKEN</option><option>EasyPark</option><option>Parkschein</option><option>Sonstiges</option></select></div><div class="field"><label>Einsatz zuordnen</label><select id="pEntryId"><option value="">keine Zuordnung</option></select></div><div class="field"><label>Start</label><input id="pStart" type="time"></div><div class="field"><label>Ende</label><input id="pEnd" type="time"></div><div class="field wide"><label>Standort</label><div class="location-row"><input id="pCity" placeholder="Adresse oder Ort manuell eingeben"><button type="button" class="location-detect" id="detectParkingLocation">Standort erkennen</button></div><div class="location-status" id="parkingLocationStatus">Optional: per GPS erkennen oder manuell eintragen.</div></div><div class="field"><label>Zone</label><input id="pZone"></div><div class="field"><label>VAT (€)</label><input id="pVat" type="number" min="0" step="0.01"></div><div class="field"><label>Dokumenttyp</label><select id="pDocumentType"><option value="receipt">Quittung / Beleg</option><option value="confirmation">Parkbestätigung</option><option value="manual">manueller Beleg</option></select></div><div class="field"><label>Berücksichtigung</label><select id="pExcluded"><option value="counted">Beruflich / berücksichtigen</option><option value="excluded">Privat / nicht berücksichtigen</option></select></div><div class="field wide"><label>Bemerkung</label><input id="pNote" placeholder="z. B. Korneuburg, 09:00–17:00"></div><div class="field wide"><label class="filelabel">Beleg fotografieren / auswählen<input id="pReceipt" type="file" accept="image/*,application/pdf"></label><div class="help" id="pReceiptInfo">Kein Beleg ausgewählt.</div></div></div></div><div class="modal-actions"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" id="saveParking" value="default">Speichern</button></div></form></dialog>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="js/boot.js?v=741"></script>
-<script src="js/app.js?v=741"></script>
+<script src="js/boot.js?v=750"></script>
+<script src="js/app.js?v=750"></script>
 
-<link rel="stylesheet" href="css/v68.css?v=741" id="v68-style">
+<link rel="stylesheet" href="css/v68.css?v=750" id="v68-style">
 
 <dialog id="v68PlanDialog" class="v68-plan-dialog">
   <div class="v68-plan-shell">
@@ -244,32 +250,33 @@
   </div>
 </dialog>
 
-<script src="js/v68.js?v=741" id="v68-script"></script>
+<script src="js/v68.js?v=750" id="v68-script"></script>
 
 
-<script src="js/v69.js?v=741" id="v69-script"></script>
+<script src="js/v69.js?v=750" id="v69-script"></script>
 
 
-<script src="js/v6103-parking-fix.js?v=741" id="v6103-parking-fix"></script>
+<script src="js/v6103-parking-fix.js?v=750" id="v6103-parking-fix"></script>
 
 
-<link rel="stylesheet" href="css/v611.css?v=741" id="v611-style">
-<script src="js/v611.js?v=741" id="v611-script"></script>
-<script src="js/v6102-calendar-batch-fix.js?v=741" id="v6102-calendar-batch-fix"></script>
+<link rel="stylesheet" href="css/v611.css?v=750" id="v611-style">
+<script src="js/v611.js?v=750" id="v611-script"></script>
+<script src="js/v6102-calendar-batch-fix.js?v=750" id="v6102-calendar-batch-fix"></script>
 
 <!-- v6113-hotfix.js ist seit V6.12 fest eingebaut (Marker: verhindert erneutes Einschleusen durch alte Service Worker) -->
-<script src="js/v612-recipients.js?v=741" id="v612-recipients"></script>
-<script src="js/v612-sync-core.js?v=741" id="v612-sync-core"></script>
-<script src="js/v614-tax.js?v=741" id="v614-tax"></script>
-<script src="js/v615-ui.js?v=741" id="v615-ui"></script>
-<script src="js/v616-auto.js?v=741" id="v616-auto"></script>
-<script src="js/v617-send.js?v=741" id="v617-send"></script>
+<script src="js/v612-recipients.js?v=750" id="v612-recipients"></script>
+<script src="js/v612-sync-core.js?v=750" id="v612-sync-core"></script>
+<script src="js/v614-tax.js?v=750" id="v614-tax"></script>
+<script src="js/v615-ui.js?v=750" id="v615-ui"></script>
+<script src="js/v616-auto.js?v=750" id="v616-auto"></script>
+<script src="js/v617-send.js?v=750" id="v617-send"></script>
 
-<script src="js/v619-reserve.js?v=741" id="v619-reserve"></script>
-<script src="js/v710-ki-erinnerung.js?v=741" id="v710-ki-erinnerung"></script>
-<script src="js/v720-wacht.js?v=741" id="v720-wacht"></script>
-<script src="js/v730-dienstplan.js?v=741" id="v730-dienstplan"></script>
-<script src="js/v740-kalender.js?v=741" id="v740-kalender"></script>
-<script src="js/main.js?v=741"></script>
+<script src="js/v619-reserve.js?v=750" id="v619-reserve"></script>
+<script src="js/v710-ki-erinnerung.js?v=750" id="v710-ki-erinnerung"></script>
+<script src="js/v720-wacht.js?v=750" id="v720-wacht"></script>
+<script src="js/v730-dienstplan.js?v=750" id="v730-dienstplan"></script>
+<script src="js/v740-kalender.js?v=750" id="v740-kalender"></script>
+<script src="js/v750-home.js?v=750" id="v750-home"></script>
+<script src="js/main.js?v=750"></script>
 
 </body></html>
