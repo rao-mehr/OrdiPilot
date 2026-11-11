@@ -15,7 +15,7 @@
   };
   const prettyDay = iso =>
     new Date(iso + 'T12:00:00').toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' });
-  const dutyCodes = iso => P.dayInfo(API().plan(), iso).codes.filter(c => P.CALENDAR.has(c));
+  const dutyCodes = iso => P.dayInfo(API().plan(), iso).codes.filter(c => P.DISPLAY.has(c));
   const chip = (code, big) =>
     `<span class="v740-chip ${P.groupOf(code)}${big ? ' big' : ''}" aria-hidden="true">${esc(code)}</span>`;
 
@@ -115,7 +115,16 @@
     d.showModal();
     return d;
   }
+  function leaveInfo(iso) {
+    dialog(
+      `<div class="v730-body"><h3>Urlaub</h3><p>${esc(
+        prettyDay(iso)
+      )}</p><p class="help">Urlaub liest die App aus dem iCloud-Kalender „Urlaub Raouf“ (von–bis). Bitte dort ändern oder löschen – hier wird es beim nächsten Abgleich übernommen.</p></div><div class="modal-actions"><button class="btn primary" value="ok">OK</button></div>`,
+      () => {}
+    );
+  }
   function openEditor(iso, from) {
+    if (from === 'U') return leaveInfo(iso);
     let pick = from;
     const buttons = P.PICKER.map(
       c =>
@@ -153,6 +162,7 @@
     sync();
   }
   function confirmRemove(iso, code) {
+    if (code === 'U') return leaveInfo(iso);
     dialog(
       `<div class="v730-body"><h3>Dienst entfernen?</h3><p><b>${esc(P.TITLES[code])}</b><br>${esc(
         prettyDay(iso)
