@@ -77,7 +77,7 @@ test('Vergleich: bereits Vorhandenes bleibt, Nachtrag wird ergänzt, Entfallenes
   assert.equal(P.diffMonth(undefined, incoming).add.length, 2);
 });
 
-test('Kalender: nur Dienste (Urlaub kommt aus dem eigenen Kalender), feste Titel wie DienstSaldo, ganztägig am Dienstbeginn, nur Änderungen schreiben', () => {
+test('Kalender: Dienste und Wochenruhe (Urlaub kommt aus dem eigenen Kalender), feste Titel wie DienstSaldo, ganztägig am Dienstbeginn, nur Änderungen schreiben', () => {
   const plan = {
     '2026-12': [
       { date: '2026-12-02', code: 'S' },
@@ -93,6 +93,7 @@ test('Kalender: nur Dienste (Urlaub kommt aus dem eigenen Kalender), feste Titel
     plain(p.put).map(x => [x.date, x.summary, x.allDay]),
     [
       ['2026-12-02', '25 Stunden Dienst (Schockdienst)', true],
+      ['2026-12-06', 'Wochenruhe', true],
       ['2026-12-07', 'Langer Dienst (LO)', true],
     ]
   );
@@ -128,6 +129,7 @@ test('Kalendertitel sind identisch mit DienstSaldo', () => {
     A4: 'Langer Dienst (A4)',
     LT: 'Langer Dienst (LT)',
     LO: 'Langer Dienst (LO)',
+    WR: 'Wochenruhe',
     U: 'Urlaub Raouf',
   });
 });
