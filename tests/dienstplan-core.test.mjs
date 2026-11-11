@@ -151,6 +151,70 @@ test('Hinweis beim Planen: Dienst, Urlaub und frei nach Dienst', () => {
   assert.equal(P.dayInfo({}, '2027-02-01').text, '');
 });
 
+test('Handänderung: Dienst eintragen, ändern, entfernen – Kalender bekommt genau die Differenz', () => {
+  let plan = { '2027-01': [{ date: '2027-01-13', code: 'HO' }] };
+  const w = { ...P.calendarPlan(plan, {}).next }; // alles geschrieben
+  // eintragen
+  plan = P.addEntry(plan, '2027-01-17', 'S');
+  assert.deepEqual(plain(plan['2027-01'][1]), { date: '2027-01-17', code: 'S', m: 1 });
+  let c = P.calendarPlan(plan, w);
+  assert.equal(c.put.length, 1);
+  assert.equal(c.put[0].summary, '25 Stunden Dienst (Schockdienst)');
+  assert.equal(c.del.length, 0);
+  // schon vorhanden: nichts ändern
+  assert.equal(P.addEntry(plan, '2027-01-17', 'S'), plan);
+  // ändern: HO → OA = altes löschen, neues schreiben
+  const changed = P.replaceEntry(plan, '2027-01-13', 'HO', 'OA');
+  c = P.calendarPlan(changed, w);
+  assert.deepEqual(plain(c.del.map(d => d.summary)), ['25 Stunden Dienst (Hauptdienst Orthopädie)']);
+  assert.ok(c.put.some(e => e.summary === '25 Stunden Dienst (Oberarztdienst)' && e.date === '2027-01-13'));
+  // entfernen eines Plan-Eintrags: Merker x, Kalender löscht
+  const removed = P.removeEntry(plan, '2027-01-13', 'HO');
+  assert.ok(removed['2027-01'].some(e => e.code === 'HO' && e.x));
+  assert.equal(P.dayInfo(removed, '2027-01-13').codes.length, 0);
+  assert.equal(P.calendarPlan(removed, w).del.length, 1);
+  // entfernen eines von Hand eingetragenen Dienstes: verschwindet ganz
+  assert.equal(P.removeEntry(plan, '2027-01-17', 'S')['2027-01'].length, 1);
+  // ungültige Eingaben ändern nichts
+  assert.equal(P.addEntry(plan, '2027-01-18', 'WR'), plan);
+  assert.equal(P.addEntry(plan, 'kaputt', 'S'), plan);
+  assert.equal(P.removeEntry(plan, '2027-01-20', 'LT'), plan);
+});
+
+test('Handänderung bleibt beim erneuten PDF-Import erhalten', () => {
+  let plan = {
+    '2027-01': [
+      { date: '2027-01-13', code: 'HO' },
+      { date: '2027-01-19', code: 'A4' },
+    ],
+  };
+  plan = P.removeEntry(plan, '2027-01-13', 'HO'); // von Hand entfernt
+  plan = P.addEntry(plan, '2027-01-17', 'S'); // von Hand ergänzt
+  const incoming = [
+    { date: '2027-01-13', code: 'HO' },
+    { date: '2027-01-19', code: 'A4' },
+  ];
+  const d = P.diffMonth(plan['2027-01'], incoming);
+  assert.equal(d.add.length, 0, 'entfernter Dienst wird nicht wieder angelegt');
+  assert.equal(d.drop.length, 0, 'von Hand Ergänztes wird nicht entfernt');
+  assert.deepEqual(plain(d.same.map(e => e.code)), ['A4']);
+  const merged = P.mergeMonth(plan['2027-01'], incoming);
+  assert.deepEqual(plain(merged.map(e => e.code + (e.x ? '!' : '') + (e.m ? '+' : ''))), ['HO!', 'S+', 'A4']);
+  // Dienst fällt im neuen Plan weg: Plan-Eintrag entfällt, Handänderung nicht
+  const later = P.mergeMonth(plan['2027-01'], [{ date: '2027-01-19', code: 'A4' }]);
+  assert.deepEqual(plain(later.map(e => e.code)), ['S', 'A4']);
+  const d2 = P.diffMonth([{ date: '2027-01-19', code: 'A4' }], []);
+  assert.equal(d2.drop.length, 1);
+});
+
+test('Gruppen für die Darstellung', () => {
+  assert.equal(P.groupOf('HO'), 'g25');
+  assert.equal(P.groupOf('A4'), 'long');
+  assert.equal(P.groupOf('U'), 'leave');
+  assert.equal(P.groupOf('WR'), 'other');
+  assert.ok(P.PICKER.every(c => P.CALENDAR.has(c)));
+});
+
 test('Datenschutz: keine Namen aus echten Dienstplänen im Code', () => {
   assert.doesNotMatch(code, /Mehrabi|Mousavi|Donauspital/);
 });
