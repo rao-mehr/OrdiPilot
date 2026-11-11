@@ -37,3 +37,7 @@ python3 tests/characterize.py   # Verhalten unverändert?
 - Bei jeder Version gemeinsam anheben: alle `?v=` in `index.html`, `start_url` in `manifest.webmanifest`, `'Version x'` und `const VERSION`, im `service-worker.js` den Cache-Namen und `V`. Neue Dateien in `js/`/`css/` auch in `FILES` im Service Worker eintragen (der Release-Test prüft das). Die `id` im Manifest bleibt immer gleich.
 - Die Charakterisierung muss unverändert bleiben. Ist eine Verhaltensänderung gewollt: `UPDATE_SNAPSHOT=1 python3 tests/characterize.py` und den Unterschied im PR erklären.
 - Geheimnisse (Dropbox-Zugang, Versand-Schlüssel) gehören nur in die Script-Eigenschaften bei Google bzw. in die App-Einstellungen – nie ins Repository.
+
+## Kalender (ab 7.4.0)
+
+Im Kalender (Übersicht → „Nächster Einsatz“) zeigt jeder Tag das Kürzel des Klinikdienstes (dunkelblau = 25-Stunden-Dienst, bernstein = Langer Dienst, grün = Urlaub, violett umrandet = Vertretung). Antippen eines Tages zeigt den Dienst mit Status; „Ändern“, „Entfernen“ und „+ Klinikdienst eintragen“ speichern in der App und schreiben dieselbe Änderung über den gemeinsamen Kalender-Dienst in den Apple-Kalender (hinzufügen, ersetzen, löschen). Nicht erreichbar → die Änderung wartet und wird automatisch nachgereicht. Von Hand Geändertes bleibt beim erneuten Hochladen des Dienstplans erhalten. DienstSaldo liest den Apple-Kalender.

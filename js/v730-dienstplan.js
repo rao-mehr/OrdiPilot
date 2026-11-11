@@ -136,23 +136,61 @@
   }
 
   const keyOf = e => e.date + '|' + e.code;
+  /* Einträge können von Hand geändert sein: m = von Hand eingetragen (bleibt beim erneuten PDF-Import erhalten),
+     x = von Hand entfernt (Merker, damit ein erneuter Import den Dienst nicht wieder anlegt). */
   /* Vergleich Plan-Import ↔ gespeicherter Plan eines Monats.
      add: neu im Plan · same: steht schon da (keine Änderung) · drop: war gespeichert, steht im neuen Plan nicht mehr. */
   function diffMonth(stored, incoming) {
     const have = new Set((stored || []).map(keyOf)),
-      want = new Set((incoming || []).map(keyOf));
+      want = new Set((incoming || []).map(keyOf)),
+      gone = new Set((stored || []).filter(e => e.x).map(keyOf));
     return {
       add: (incoming || []).filter(e => !have.has(keyOf(e))),
-      same: (incoming || []).filter(e => have.has(keyOf(e))),
-      drop: (stored || []).filter(e => !want.has(keyOf(e))),
+      same: (incoming || []).filter(e => have.has(keyOf(e)) && !gone.has(keyOf(e))),
+      drop: (stored || []).filter(e => !want.has(keyOf(e)) && !e.m && !e.x),
     };
   }
+  /* Gespeicherter Monat nach einem PDF-Import: Plan-Einträge, die nicht mehr im Plan stehen, entfallen;
+     von Hand Eingetragenes und von Hand Entferntes (solange es im Plan steht) bleibt. */
+  function mergeMonth(stored, incoming) {
+    const want = new Set((incoming || []).map(keyOf)),
+      have = new Set((stored || []).map(keyOf));
+    const kept = (stored || []).filter(e => want.has(keyOf(e)) || e.m);
+    const add = (incoming || []).filter(e => !have.has(keyOf(e)));
+    return [...kept, ...add].sort(order);
+  }
+  const order = (a, b) => a.date.localeCompare(b.date) || a.code.localeCompare(b.code);
+
+  /* Handänderungen (unveränderlich: liefern einen neuen Plan) */
+  const monthOf = iso => String(iso).slice(0, 7);
+  function addEntry(plan, date, code) {
+    if (!/^\d{4}-\d\d-\d\d$/.test(date) || !(DUTY.has(code) || code === 'U')) return plan;
+    const m = monthOf(date),
+      list = (plan[m] || []).slice(),
+      i = list.findIndex(e => e.date === date && e.code === code);
+    if (i >= 0) {
+      if (!list[i].x) return plan;
+      list[i] = { date, code }; // Merker „entfernt“ aufheben: der Plan-Eintrag gilt wieder
+    } else list.push({ date, code, m: 1 });
+    return { ...plan, [m]: list.sort(order) };
+  }
+  function removeEntry(plan, date, code) {
+    const m = monthOf(date),
+      list = (plan[m] || []).slice(),
+      i = list.findIndex(e => e.date === date && e.code === code && !e.x);
+    if (i < 0) return plan;
+    if (list[i].m) list.splice(i, 1);
+    else list[i] = { date, code, x: 1 };
+    return { ...plan, [m]: list.sort(order) };
+  }
+  const replaceEntry = (plan, date, from, to) =>
+    from === to ? plan : addEntry(removeEntry(plan, date, from), date, to);
 
   /* plan: { 'JJJJ-MM': [{date, code}] } → flache Liste, nach Datum sortiert */
   const flatten = plan =>
     Object.keys(plan || {})
       .sort()
-      .flatMap(m => plan[m] || []);
+      .flatMap(m => (plan[m] || []).filter(e => !e.x));
 
   const uidOf = e => `op-${e.date}-${e.code}@ordipilot`;
   const hashOf = ev => JSON.stringify(['v1', ev.summary, ev.date]);
@@ -182,7 +220,7 @@
 
   /* Was steht am Tag im Plan? → { codes:[…], text } für den Hinweis beim Planen eines Einsatzes. */
   function dayInfo(plan, iso) {
-    const codes = (plan[(iso || '').slice(0, 7)] || []).filter(e => e.date === iso).map(e => e.code);
+    const codes = (plan[(iso || '').slice(0, 7)] || []).filter(e => e.date === iso && !e.x).map(e => e.code);
     if (!codes.length) return { codes: [], text: '' };
     const names = codes.map(c => TITLES[c] || LABELS[c] || c);
     return {
@@ -203,6 +241,12 @@
     parsePage,
     toEntries,
     diffMonth,
+    mergeMonth,
+    addEntry,
+    removeEntry,
+    replaceEntry,
+    PICKER: Object.freeze(['HO', 'HT', 'OA', 'S', 'A1', 'A2', 'A4', 'LO', 'LT', 'U']),
+    groupOf: c => (c === 'U' ? 'leave' : DUTY_25H.has(c) ? 'g25' : DUTY.has(c) ? 'long' : 'other'),
     flatten,
     calendarPlan,
     dayInfo,
@@ -318,14 +362,39 @@
     if (r.errors?.length) bits.push(`${r.errors.length} Fehler`);
     return bits.join(' · ');
   };
+  let syncing = null;
   async function runCalendar() {
+    if (syncing) return syncing; // ein Abgleich zur Zeit – parallele Aufrufe warten auf denselben
+    syncing = (async () => {
+      let res;
+      try {
+        const r = await syncCalendar();
+        res = { text: calendarSummary(r), bad: !!r.errors?.length, raw: r };
+      } catch (e) {
+        res = { text: 'Kalender: ' + (e.message || 'Fehler') + ' Die Dienste sind in der App gespeichert.', bad: true };
+      }
+      setStatus(res.text, res.bad);
+      document.dispatchEvent(new CustomEvent('ordipilot:plan-sync', { detail: res }));
+      return res;
+    })();
     try {
-      const r = await syncCalendar();
-      setStatus(calendarSummary(r), !!r.errors?.length);
-    } catch (e) {
-      setStatus('Kalender: ' + (e.message || 'Fehler') + ' Die Dienste sind in der App gespeichert.', true);
+      return await syncing;
+    } finally {
+      syncing = null;
     }
   }
+  /* Schnittstelle für die Kalender-Ansicht (v740) */
+  window.OrdiPilotPlan = {
+    plan,
+    setPlan(next) {
+      state.settings.klinikPlan = next;
+      saveSettings();
+      renderList();
+    },
+    sync: runCalendar,
+    ready: calendarReady,
+    pending: () => P.calendarPlan(plan(), written()),
+  };
 
   /* ---- Vorschau-Dialog ---- */
   function askConfirm(html) {
@@ -399,10 +468,7 @@
       }
       const next = { ...plan() };
       for (const d of diffs) {
-        const kept = (next[d.month] || []).filter(e => !d.drop.some(x => x.date === e.date && x.code === e.code));
-        next[d.month] = [...kept, ...d.add].sort(
-          (a, b) => a.date.localeCompare(b.date) || a.code.localeCompare(b.code)
-        );
+        next[d.month] = P.mergeMonth(next[d.month], d.entries);
       }
       state.settings.klinikPlan = next;
       saveSettings();
