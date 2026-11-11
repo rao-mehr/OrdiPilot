@@ -268,6 +268,40 @@
     };
   }
 
+  /* ---- Menü: fünf Tabs. „Übersicht“ und „Einsätze“ teilen sich einen Tab mit Umschalter oben ---- */
+  function segmentBar() {
+    ['dashboard', 'entries'].forEach(name => {
+      const panel = $('panel-' + name);
+      if (!panel || panel.querySelector('.v760-seg')) return;
+      const bar = document.createElement('div');
+      bar.className = 'v67-segment v760-seg no-print';
+      bar.innerHTML = `<button type="button" data-v760="dashboard">Übersicht</button><button type="button" data-v760="entries">Alle Einsätze</button>`;
+      bar.onclick = e => {
+        const b = e.target.closest('[data-v760]');
+        if (b) switchTab(b.dataset.v760);
+      };
+      panel.insertBefore(bar, panel.firstChild);
+    });
+  }
+  function markSeg(name) {
+    document.querySelectorAll('.v760-seg button').forEach(b => b.classList.toggle('active', b.dataset.v760 === name));
+    if (name === 'dashboard') document.querySelector('.tab[data-tab="entries"]')?.classList.add('active');
+  }
+  OrdiPilotExt.extend(
+    'switchTab',
+    base =>
+      function (name) {
+        const out = base.apply(this, arguments);
+        try {
+          segmentBar();
+          markSeg(name);
+        } catch (e) {
+          console.error('v760 Menü', e);
+        }
+        return out;
+      }
+  );
+
   function css() {
     if ($('v750-style')) return;
     const st = document.createElement('style');
@@ -281,7 +315,8 @@
 .v750-imp-row .btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:62px;padding:10px 12px}
 .v750-imp-row small{opacity:.7;font-weight:500}
 #panel-calendar .v67-cal-body{padding:0}
-.tabs{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))}
+.tabs{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))}
+.v760-seg{margin:0 0 12px}
 .tabs .tab{min-width:0;padding-left:2px;padding-right:2px}
 .tabs .tab-label{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}`;
     document.head.appendChild(st);
@@ -289,6 +324,7 @@
 
   OrdiPilotBoot.add('app:dashboard', () => {
     css();
+    segmentBar();
     buildImport();
     backupCard();
     if (typeof v67SetCursor === 'function') {
