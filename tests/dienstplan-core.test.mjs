@@ -77,7 +77,7 @@ test('Vergleich: bereits Vorhandenes bleibt, Nachtrag wird ergänzt, Entfallenes
   assert.equal(P.diffMonth(undefined, incoming).add.length, 2);
 });
 
-test('Kalender: nur Dienste und Urlaub, feste Titel wie DienstSaldo, ganztägig am Dienstbeginn, nur Änderungen schreiben', () => {
+test('Kalender: nur Dienste (Urlaub kommt aus dem eigenen Kalender), feste Titel wie DienstSaldo, ganztägig am Dienstbeginn, nur Änderungen schreiben', () => {
   const plan = {
     '2026-12': [
       { date: '2026-12-02', code: 'S' },
@@ -94,7 +94,6 @@ test('Kalender: nur Dienste und Urlaub, feste Titel wie DienstSaldo, ganztägig 
     [
       ['2026-12-02', '25 Stunden Dienst (Schockdienst)', true],
       ['2026-12-07', 'Langer Dienst (LO)', true],
-      ['2026-12-22', 'Urlaub Raouf', true],
     ]
   );
   assert.equal(p.del.length, 0);
@@ -217,4 +216,31 @@ test('Gruppen für die Darstellung', () => {
 
 test('Datenschutz: keine Namen aus echten Dienstplänen im Code', () => {
   assert.doesNotMatch(code, /Mehrabi|Mousavi|Donauspital/);
+});
+
+test('Urlaub von–bis aus dem zweiten Kalender: nur „Urlaub Raouf“, Rest ignoriert; wird nie geschrieben', () => {
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'BEGIN:VEVENT',
+    'UID:a',
+    'DTSTART;VALUE=DATE:20261123',
+    'DTEND;VALUE=DATE:20261126',
+    'SUMMARY:Urlaub Raouf',
+    'END:VEVENT',
+    'BEGIN:VEVENT',
+    'UID:b',
+    'DTSTART;VALUE=DATE:20261201',
+    'DTEND;VALUE=DATE:20261202',
+    'SUMMARY:Zahnarzt',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  const days = P.leaveDates(ics, '2026-11-11T12:00:00Z');
+  assert.deepEqual(plain(days), ['2026-11-23', '2026-11-24', '2026-11-25']);
+  const merged = P.withLeave({}, days);
+  assert.equal(P.dayInfo(merged, '2026-11-24').codes[0], 'U');
+  assert.equal(P.calendarPlan(merged, {}).put.length, 0);
+  assert.deepEqual(plain(P.stripLeave(merged)), {});
+  const hidden = P.withLeave({ '2026-11': [{ date: '2026-11-24', code: 'U', x: 1 }] }, days);
+  assert.equal(P.dayInfo(hidden, '2026-11-24').codes.length, 0);
 });

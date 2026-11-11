@@ -29,7 +29,8 @@
   // Diese Kürzel werden gemerkt (für Hinweise beim Planen); alles andere im Plan (#, Spezial, Zahlen, Fachrichtung) nicht.
   const KEEP = new Set([...DUTY, 'U', 'C', 'SU', 'WR', 'AD', 'DF']);
   // Nur diese kommen in den Kalender (wie DienstSaldo: keine Wochenruhe, kein Kongress).
-  const CALENDAR = new Set([...DUTY, 'U']);
+  // Urlaub steht in einem eigenen iCloud-Kalender ("Urlaub Raouf", von–bis) und wird von dort gelesen, nicht geschrieben.
+  const CALENDAR = new Set([...DUTY]);
   // Feste Kalendertitel – identisch mit DienstSaldo, damit beide Apps dieselben Termine erkennen.
   const TITLES = Object.freeze({
     HO: '25 Stunden Dienst (Hauptdienst Orthopädie)',
@@ -230,10 +231,94 @@
     };
   }
 
+  /* ---- Urlaub aus dem zweiten Kalender (nur gelesen) ---- */
+  const unfold = t => String(t).replace(/\r?\n[ \t]/g, '');
+  const plusDay = (iso, n) => {
+    const d = new Date(iso + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  const isLeaveTitle = t =>
+    /^urlaub(?:\s+raouf)?$/i.test(
+      String(t || '')
+        .normalize('NFKC')
+        .trim()
+        .replace(/\s+/g, ' ')
+    );
+  /* ICS-Text → Liste der Urlaubstage (nur Ganztagstermine „Urlaub Raouf“, auch über mehrere Tage). Alles andere wird ignoriert. */
+  function leaveDates(ics, now) {
+    const text = String(ics || '');
+    if (!text.includes('BEGIN:VCALENDAR') || text.length > 1300000) return [];
+    const base = now ? new Date(now) : new Date();
+    const low = plusDay(base.toISOString().slice(0, 10), -60),
+      high = plusDay(base.toISOString().slice(0, 10), 395);
+    const out = new Set();
+    let cur = null;
+    for (const line of unfold(text).split(/\r?\n/)) {
+      if (line.trim() === 'BEGIN:VEVENT') cur = {};
+      else if (line.trim() === 'END:VEVENT') {
+        if (
+          cur &&
+          cur.title &&
+          isLeaveTitle(cur.title) &&
+          cur.start &&
+          cur.start.length === 8 &&
+          !cur.cancelled &&
+          !cur.rrule
+        ) {
+          const d8 = v => v.slice(0, 4) + '-' + v.slice(4, 6) + '-' + v.slice(6, 8);
+          const first = d8(cur.start);
+          let last = cur.end && cur.end.length === 8 && d8(cur.end) > first ? plusDay(d8(cur.end), -1) : first;
+          if (last > plusDay(first, 89)) last = plusDay(first, 89);
+          for (let d = first; d <= last; d = plusDay(d, 1)) if (d >= low && d <= high) out.add(d);
+        }
+        cur = null;
+      } else if (cur) {
+        const i = line.indexOf(':');
+        if (i < 1) continue;
+        const lhs = line.slice(0, i),
+          key = lhs.split(';')[0].toUpperCase(),
+          val = line.slice(i + 1);
+        if (key === 'SUMMARY') cur.title = val.replace(/\\([,;\\])/g, '$1').trim();
+        else if (key === 'DTSTART' && /VALUE=DATE(?:;|$)/i.test(lhs.slice(key.length) + ';')) cur.start = val.trim();
+        else if (key === 'DTEND') cur.end = /VALUE=DATE(?:;|$)/i.test(lhs.slice(key.length) + ';') ? val.trim() : '';
+        else if (key === 'STATUS' && /CANCELLED/i.test(val)) cur.cancelled = true;
+        else if (key === 'RRULE') cur.rrule = true;
+      }
+    }
+    return [...out].sort();
+  }
+  /* Urlaubstage aus dem Kalender als Plan-Einträge (c = aus dem Kalender, werden nie gespeichert). Handentfernte bleiben entfernt. */
+  function withLeave(plan, dates) {
+    if (!dates || !dates.length) return plan || {};
+    const next = { ...(plan || {}) };
+    for (const d of dates) {
+      if (!/^\d{4}-\d\d-\d\d$/.test(d)) continue;
+      const m = monthOf(d),
+        list = (next[m] || []).slice();
+      if (list.some(e => e.date === d && e.code === 'U')) continue;
+      list.push({ date: d, code: 'U', c: 1 });
+      next[m] = list.sort(order);
+    }
+    return next;
+  }
+  function stripLeave(plan) {
+    const next = {};
+    for (const m of Object.keys(plan || {})) {
+      const list = (plan[m] || []).filter(e => !e.c);
+      if (list.length) next[m] = list;
+    }
+    return next;
+  }
+
   const api = {
+    leaveDates,
+    withLeave,
+    stripLeave,
     DUTY,
     DUTY_25H,
     CALENDAR,
+    DISPLAY: new Set([...DUTY, 'U']),
     TITLES,
     LABELS,
     detectMonth,
@@ -245,7 +330,7 @@
     addEntry,
     removeEntry,
     replaceEntry,
-    PICKER: Object.freeze(['HO', 'HT', 'OA', 'S', 'A1', 'A2', 'A4', 'LO', 'LT', 'U']),
+    PICKER: Object.freeze(['HO', 'HT', 'OA', 'S', 'A1', 'A2', 'A4', 'LO', 'LT']),
     groupOf: c => (c === 'U' ? 'leave' : DUTY_25H.has(c) ? 'g25' : DUTY.has(c) ? 'long' : 'other'),
     flatten,
     calendarPlan,
@@ -280,7 +365,8 @@
     }
   };
   // Lesen legt nichts an (der gespeicherte Stand bleibt unverändert, solange nichts importiert wurde).
-  const plan = () => state.settings.klinikPlan || {};
+  const rawPlan = () => state.settings.klinikPlan || {};
+  const plan = () => P.withLeave(rawPlan(), state.settings.klinikLeave || []);
   const written = () => state.settings.klinikCal || {};
   // Einstellungen tragen einen Zeitstempel, nach dem der Dropbox-Abgleich den neueren Stand wählt.
   const saveSettings = () => {
@@ -332,7 +418,7 @@
   /* ---- Kalender: schreiben/löschen über den gemeinsamen Dienst ---- */
   async function syncCalendar() {
     if (!calendarReady()) return { skippedSetup: true };
-    const p = P.calendarPlan(plan(), written());
+    const p = P.calendarPlan(rawPlan(), written());
     if (!p.put.length && !p.del.length) return { put: 0, skipped: [], deleted: 0, errors: [], idle: true };
     const r = await fetch(baseUrl() + '/api/plan-push', {
       method: 'POST',
@@ -362,12 +448,69 @@
     if (r.errors?.length) bits.push(`${r.errors.length} Fehler`);
     return bits.join(' · ');
   };
+  /* ---- Urlaub aus dem zweiten iCloud-Kalender lesen (über den gemeinsamen Dienst, nur Lesen) ---- */
+  const LEAVE_KEY = 'ordipilot-leave-feed'; // geheimer Kalenderlink: nur auf diesem Gerät
+  const getLeaveUrl = () => {
+    try {
+      return localStorage.getItem(LEAVE_KEY) || '';
+    } catch {
+      return '';
+    }
+  };
+  const setLeaveUrl = v => {
+    try {
+      if (v) localStorage.setItem(LEAVE_KEY, v);
+      else localStorage.removeItem(LEAVE_KEY);
+    } catch {
+      /* Speicher gesperrt */
+    }
+  };
+  let leaveBusy = false;
+  async function syncLeave() {
+    const url = getLeaveUrl();
+    if (!url || !calendarReady() || leaveBusy) return;
+    leaveBusy = true;
+    try {
+      const r = await fetch(baseUrl() + '/api/plan-push', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+        body: JSON.stringify({ read: url }),
+      });
+      if (!r.ok) {
+        let b = {};
+        try {
+          b = await r.json();
+        } catch {
+          /* keine JSON-Antwort */
+        }
+        throw new Error(b.error || 'Urlaub-Kalender nicht lesbar (' + r.status + ').');
+      }
+      const dates = P.leaveDates(await r.text());
+      if (JSON.stringify(dates) !== JSON.stringify(state.settings.klinikLeave || [])) {
+        state.settings.klinikLeave = dates;
+        saveSettings();
+        renderList();
+        if (typeof renderV67Calendar === 'function') renderV67Calendar();
+      }
+      setStatus(`Urlaub-Kalender gelesen · ${dates.length} Urlaubstage.`);
+    } catch (e) {
+      setStatus('Urlaub-Kalender: ' + (e.message || 'Fehler') + ' Bisherige Urlaubstage bleiben.', true);
+    } finally {
+      leaveBusy = false;
+    }
+  }
+  setTimeout(() => void syncLeave(), 2500);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) void syncLeave();
+  });
   let syncing = null;
   async function runCalendar() {
     if (syncing) return syncing; // ein Abgleich zur Zeit – parallele Aufrufe warten auf denselben
     syncing = (async () => {
       let res;
       try {
+        void syncLeave();
         const r = await syncCalendar();
         res = { text: calendarSummary(r), bad: !!r.errors?.length, raw: r };
       } catch (e) {
@@ -387,13 +530,14 @@
   window.OrdiPilotPlan = {
     plan,
     setPlan(next) {
-      state.settings.klinikPlan = next;
+      state.settings.klinikPlan = P.stripLeave(next);
       saveSettings();
       renderList();
     },
     sync: runCalendar,
     ready: calendarReady,
-    pending: () => P.calendarPlan(plan(), written()),
+    pending: () => P.calendarPlan(rawPlan(), written()),
+    syncLeave: () => syncLeave(),
   };
 
   /* ---- Vorschau-Dialog ---- */
@@ -435,7 +579,7 @@
         return;
       }
       const unknown = [...new Set(parsed.flatMap(p => p.unknown))];
-      const diffs = parsed.map(p => ({ ...p, ...P.diffMonth(plan()[p.month], p.entries) }));
+      const diffs = parsed.map(p => ({ ...p, ...P.diffMonth(rawPlan()[p.month], p.entries) }));
       const count = list => {
         const duty = list.filter(e => P.DUTY.has(e.code)).length,
           leave = list.filter(e => e.code === 'U').length,
@@ -466,7 +610,7 @@
         setStatus('Abgebrochen – nichts verändert.');
         return;
       }
-      const next = { ...plan() };
+      const next = { ...rawPlan() };
       for (const d of diffs) {
         next[d.month] = P.mergeMonth(next[d.month], d.entries);
       }
@@ -513,6 +657,7 @@
 <div class="field wide"><label>Mein Name im Dienstplan</label><input id="v730Name" autocomplete="off" placeholder="Nachname wie in der Plan-Zeile" value="${esc(s.planName || '')}"></div>
 <div class="field wide"><label>Kalender-Dienst (Adresse)</label><input id="v730Url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://dienstsaldo-rm.pages.dev" value="${esc(s.planApiUrl || '')}"></div>
 <div class="field wide"><label>Zugangstoken (nur auf diesem Gerät)</label><input id="v730Token" type="password" autocomplete="off" placeholder="${getToken() ? '•••••••• gespeichert' : 'Token einfügen'}"><div class="help">Diese Adresse muss im Kalender-Dienst freigegeben sein: <code>${esc(location.origin)}</code></div></div>
+<div class="field wide"><label>Urlaub-Kalender (iCloud-Link, nur auf diesem Gerät)</label><input id="v730Leave" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${getLeaveUrl() ? '•••••••• gespeichert' : 'webcal://p…-caldav.icloud.com/published/2/…'}"><div class="help">Gelesen wird nur „Urlaub Raouf“ (von–bis). Alles andere in diesem Kalender wird ignoriert.</div></div>
 <div class="field wide"><label><input id="v730Auto" type="checkbox" style="min-height:auto;width:auto;margin-right:7px"${s.planCalendarAuto === false ? '' : ' checked'}> Neue Dienste automatisch in den Apple-Kalender eintragen</label></div>
 </div>
 <div class="v730-actions"><button class="btn primary" type="button" id="v730Upload">Dienstplan hochladen (PDF)</button><button class="btn" type="button" id="v730Resync">Kalender abgleichen</button></div>
@@ -546,6 +691,29 @@
         e.target.placeholder = '•••••••• gespeichert';
         setStatus('Token auf diesem Gerät gespeichert.');
       }
+    });
+    $('v730Leave').addEventListener('change', e => {
+      const v = e.target.value.trim();
+      if (!v) {
+        setLeaveUrl('');
+        delete state.settings.klinikLeave;
+        saveSettings();
+        setStatus('Urlaub-Kalender getrennt.');
+        return;
+      }
+      if (
+        !/^(?:webcal|https):\/\/p\d{1,3}-(?:caldav|calendarws)\.icloud\.com\/published\/2\/[A-Za-z0-9._~%-]{15,1500}$/i.test(
+          v
+        )
+      ) {
+        setStatus('Das ist kein veröffentlichter iCloud-Kalenderlink (webcal://…).', true);
+        return;
+      }
+      setLeaveUrl(v);
+      e.target.value = '';
+      e.target.placeholder = '•••••••• gespeichert';
+      setStatus('Urlaub-Kalender gespeichert, wird gelesen …');
+      void syncLeave();
     });
     $('v730Auto').addEventListener('change', e => {
       state.settings.planCalendarAuto = e.target.checked;

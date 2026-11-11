@@ -40,4 +40,6 @@ python3 tests/characterize.py   # Verhalten unverändert?
 
 ## Kalender (ab 7.4.0)
 
+**Urlaub (ab 7.4.1):** Urlaub steht im zweiten iCloud-Kalender als mehrtägiger Termin „Urlaub Raouf“ (von–bis). Die App liest ihn von dort (Einstellungen → Urlaub-Kalender, Link nur auf diesem Gerät) und schreibt keinen Urlaub mehr in den Dienstkalender. Alles andere in diesem Kalender wird ignoriert.
+
 Im Kalender (Übersicht → „Nächster Einsatz“) zeigt jeder Tag das Kürzel des Klinikdienstes (dunkelblau = 25-Stunden-Dienst, bernstein = Langer Dienst, grün = Urlaub, violett umrandet = Vertretung). Antippen eines Tages zeigt den Dienst mit Status; „Ändern“, „Entfernen“ und „+ Klinikdienst eintragen“ speichern in der App und schreiben dieselbe Änderung über den gemeinsamen Kalender-Dienst in den Apple-Kalender (hinzufügen, ersetzen, löschen). Nicht erreichbar → die Änderung wartet und wird automatisch nachgereicht. Von Hand Geändertes bleibt beim erneuten Hochladen des Dienstplans erhalten. DienstSaldo liest den Apple-Kalender.
