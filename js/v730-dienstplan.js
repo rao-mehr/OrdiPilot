@@ -28,9 +28,9 @@
   const DUTY_25H = new Set(['HO', 'HT', 'OA', 'S', 'A1', 'A2']);
   // Diese Kürzel werden gemerkt (für Hinweise beim Planen); alles andere im Plan (#, Spezial, Zahlen, Fachrichtung) nicht.
   const KEEP = new Set([...DUTY, 'U', 'C', 'SU', 'WR', 'AD', 'DF']);
-  // Diese kommen in den Kalender: Dienste und Wochenruhe (kein Kongress).
+  // Nur Dienste kommen in den Kalender (keine Wochenruhe, kein Kongress).
   // Urlaub steht in einem eigenen iCloud-Kalender ("Urlaub Raouf", von–bis) und wird von dort gelesen, nicht geschrieben.
-  const CALENDAR = new Set([...DUTY, 'WR']);
+  const CALENDAR = new Set([...DUTY]);
   // Feste Kalendertitel – identisch mit DienstSaldo, damit beide Apps dieselben Termine erkennen.
   const TITLES = Object.freeze({
     HO: '25 Stunden Dienst (Hauptdienst Orthopädie)',
@@ -42,7 +42,6 @@
     A4: 'Langer Dienst (A4)',
     LT: 'Langer Dienst (LT)',
     LO: 'Langer Dienst (LO)',
-    WR: 'Wochenruhe',
     U: 'Urlaub Raouf',
   });
   const LABELS = Object.freeze({

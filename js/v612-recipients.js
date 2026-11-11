@@ -1,7 +1,7 @@
 /* OrdiPilot V6.12 · Empfängerspezifische Honorarnoten-Texte (vormals v6113-hotfix.js, jetzt fest eingebaut). */
 (function () {
   'use strict';
-  const VERSION = '7.5.3';
+  const VERSION = '7.5.4';
   const DEFAULT_ROLE = 'Ordinationsinhaberin';
   const DEFAULT_SERVICE = 'Ärztliche Vertretungstätigkeit';
 
