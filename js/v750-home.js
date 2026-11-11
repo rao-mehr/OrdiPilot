@@ -192,6 +192,82 @@
       }
   );
 
+  /* ---- Datensicherung: alle Daten als Datei sichern / zurückspielen (ohne Zugangsdaten) ---- */
+  function backupCard() {
+    if ($('v751Backup')) return;
+    const h = [...document.querySelectorAll('#panel-settings .settings-accordion-head span:first-child')].find(x =>
+      /Dropbox/i.test(x.textContent)
+    );
+    const grid = h?.closest('.v611-settings-detail');
+    if (!grid) {
+      if (!backupCard.tries || backupCard.tries < 20) {
+        backupCard.tries = (backupCard.tries || 0) + 1;
+        setTimeout(backupCard, 500);
+      }
+      return;
+    }
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'v751Backup';
+    card.innerHTML = `<h3>Datensicherung</h3><div class="help">Sichert Einsätze, Pläne und Einstellungen als Datei (ohne Passwörter und Zugänge) – z. B. vor einem Handywechsel. Die Datei bitte privat aufbewahren.</div>
+<div class="v730-actions"><button class="btn primary" type="button" id="v751Export">Sicherung speichern</button><button class="btn" type="button" id="v751Import">Sicherung einlesen</button></div>
+<div class="help" id="v751Status" role="status" aria-live="polite"></div>`;
+    grid.appendChild(card);
+    const say = t => ($('v751Status').textContent = t);
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = 'application/json,.json';
+    file.hidden = true;
+    card.appendChild(file);
+    $('v751Export').onclick = async () => {
+      const d = new Date(),
+        name = `OrdiPilot-Sicherung-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`,
+        blob = new Blob([JSON.stringify({ app: 'OrdiPilot', type: 'backup', at: d.toISOString(), state }, null, 1)], {
+          type: 'application/json',
+        }),
+        f = new File([blob], name, { type: 'application/json' });
+      try {
+        if (navigator.canShare?.({ files: [f] })) {
+          await navigator.share({ files: [f], title: name });
+          say('Sicherung geteilt/gespeichert.');
+          return;
+        }
+      } catch (e) {
+        if (e?.name === 'AbortError') return;
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      say('Sicherung heruntergeladen.');
+    };
+    $('v751Import').onclick = () => file.click();
+    file.onchange = async () => {
+      const f = file.files?.[0];
+      file.value = '';
+      if (!f) return;
+      try {
+        const j = JSON.parse(await f.text());
+        const st = j && j.app === 'OrdiPilot' && j.type === 'backup' ? j.state : null;
+        if (!st || !Array.isArray(st.entries) || typeof st.settings !== 'object') throw new Error('bad');
+        if (
+          !confirm(
+            `Sicherung vom ${new Date(j.at).toLocaleString('de-AT')} einlesen?\n\n${st.entries.length} Einsätze. Die aktuellen Daten auf diesem Gerät werden ersetzt.`
+          )
+        )
+          return;
+        Object.keys(state).forEach(k => delete state[k]);
+        Object.assign(state, st);
+        saveState();
+        say('Sicherung eingelesen – App wird neu geladen …');
+        setTimeout(() => location.reload(), 600);
+      } catch {
+        say('Diese Datei ist keine gültige OrdiPilot-Sicherung. Es wurde nichts geändert.');
+      }
+    };
+  }
+
   function css() {
     if ($('v750-style')) return;
     const st = document.createElement('style');
@@ -214,6 +290,7 @@
   OrdiPilotBoot.add('app:dashboard', () => {
     css();
     buildImport();
+    backupCard();
     if (typeof v67SetCursor === 'function') {
       v67SelectedDate = todayISO();
       v67SetCursor(v67SelectedDate);

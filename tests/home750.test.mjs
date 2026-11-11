@@ -10,5 +10,5 @@ test('V7.5.0: Kalender ist erster Tab und Startseite, Import liegt darunter, Dat
   assert.ok(html.indexOf('data-tab="calendar"') < html.indexOf('data-tab="dashboard"'));
   assert.doesNotMatch(html, /<section class="panel active" id="panel-dashboard">/);
   assert.match(read('service-worker.js'), /js\/v750-home\.js/);
-  assert.match(html, /js\/v750-home\.js\?v=751/);
+  assert.match(html, /js\/v750-home\.js\?v=752/);
 });
