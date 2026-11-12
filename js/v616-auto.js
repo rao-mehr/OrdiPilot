@@ -15,6 +15,9 @@
     klinik_ab: 'work',
     arbeit: 'work',
     work: 'work',
+    zuhause: 'home',
+    wohnung: 'home',
+    home: 'home',
   };
   // Zeile: "2026-10-28T08:47:12+01:00 ankunft" oder "28.10.2026, 08:47 ankunft"
   function parseLog(text) {
@@ -83,15 +86,26 @@
       if (!visits.length) continue;
       const arrive = visits[0].arrive,
         leave = visits[visits.length - 1].leave;
-      const work = [...list]
+      // Letzte Abfahrt (Klinik oder Zuhause) bis 3 h vor der Ankunft = Start der Fahrt
+      const dep = [...list]
         .reverse()
-        .find(e => e.type === 'work' && tm(e.time) <= tm(arrive) && tm(arrive) - tm(e.time) <= 180);
-      out.push({ date, arrive, leave, fromWork: !!work });
+        .find(
+          e => (e.type === 'work' || e.type === 'home') && tm(e.time) <= tm(arrive) && tm(arrive) - tm(e.time) <= 180
+        );
+      out.push({
+        date,
+        arrive,
+        leave,
+        fromWork: !!dep && dep.type === 'work',
+        departFrom: dep ? (dep.type === 'work' ? 'work' : 'home') : '',
+        depart: dep ? dep.time : '',
+        travelMin: dep ? tm(arrive) - tm(dep.time) : null,
+      });
     }
     return out.sort((a, b) => a.date.localeCompare(b.date));
   }
   // Texte für die Einrichtung per „Kurzbefehl beschreiben“ (iOS 27) – zum Kopieren
-  function guideTexts(log, ord, work) {
+  function guideTexts(log, ord, work, home) {
     const sc = (name, word) => ({
       name,
       word,
@@ -101,6 +115,7 @@
       sc('OrdiPilot Ankunft', 'ankunft'),
       sc('OrdiPilot Abfahrt', 'abfahrt'),
       sc('OrdiPilot Klinik', 'klinik'),
+      sc('OrdiPilot Zuhause', 'zuhause'),
     ];
     const au = (label, place, verb, name) => ({
       label,
@@ -112,6 +127,7 @@
         au('Ankommen Ordination', `bei ${ord}`, 'ankomme', 'OrdiPilot Ankunft'),
         au('Verlassen Ordination', ord, 'verlasse', 'OrdiPilot Abfahrt'),
         au('Verlassen Arbeit', work, 'verlasse', 'OrdiPilot Klinik'),
+        au('Verlassen Zuhause', home || 'Adresse deiner Wohnung', 'verlasse', 'OrdiPilot Zuhause'),
       ],
       monthEnd: 'Zeige am letzten Tag jedes Monats um 18:00 Uhr die Mitteilung „Honorarnote erstellen“.',
     };
@@ -189,10 +205,18 @@
         created++;
       }
       if (e.confirmedAt || locked(e)) continue; // bestätigte/abgerechnete Einsätze bleiben unangetastet
-      if (e.geoArrive !== d.arrive || e.geoLeave !== d.leave || e.geoFromWork !== d.fromWork) {
+      if (
+        e.geoArrive !== d.arrive ||
+        e.geoLeave !== d.leave ||
+        e.geoFromWork !== d.fromWork ||
+        (e.geoDepart || '') !== (d.depart || '') ||
+        (e.geoDepartFrom || '') !== (d.departFrom || '')
+      ) {
         e.geoArrive = d.arrive;
         e.geoLeave = d.leave;
         e.geoFromWork = d.fromWork;
+        e.geoDepart = d.depart || '';
+        e.geoDepartFrom = d.departFrom || '';
         e.updatedAt = now();
         updated++;
       }
@@ -236,6 +260,14 @@
     for (const t of state.trips || []) if (t.auto && ids.has(t.entryId)) state.deletedTrips[t.id] = now();
     state.trips = (state.trips || []).filter(t => !(t.auto && ids.has(t.entryId)));
     return stale.length;
+  }
+  function geoTrip(e) {
+    if (!e.geoDepart || !e.geoDepartFrom) return '';
+    const [h1, m1] = e.geoDepart.split(':').map(Number),
+      [h2, m2] = String(e.geoArrive).split(':').map(Number),
+      min = h2 * 60 + m2 - (h1 * 60 + m1);
+    const from = e.geoDepartFrom === 'work' ? 'Klinik' : 'Zuhause';
+    return `<br>🚗 ab ${from} ${esc(e.geoDepart)}${min > 0 ? ' · Fahrzeit ' + min + ' min' : ''}`;
   }
   async function importGeo() {
     if (!isDropboxConnected()) return;
@@ -357,7 +389,7 @@
             if (t)
               t.insertAdjacentHTML(
                 'afterend',
-                `<div class="v616-geo">📍 erkannt ${esc(e.geoArrive)}${e.geoLeave ? '–' + esc(e.geoLeave) : ''}${e.geoFromWork ? ' · ab Arbeit' : ''} – zum Übernehmen bestätigen</div>`
+                `<div class="v616-geo">📍 erkannt ${esc(e.geoArrive)}${e.geoLeave ? '–' + esc(e.geoLeave) : ''}${e.geoFromWork ? ' · ab Arbeit' : ''} – zum Übernehmen bestätigen${geoTrip(e)}</div>`
               );
           }
         } catch (e) {
@@ -427,16 +459,16 @@
     const lastEv = state.settings.geoLastEvent;
     const ord = state.settings.calendarEventLocation || 'Adresse der Ordination';
     const work = state.settings.travelWork || 'Adresse deines Arbeitsplatzes';
-    const T = A.guideTexts(LOG, ord, work);
+    const T = A.guideTexts(LOG, ord, work, state.settings.travelHome);
     const copy = (label, text) =>
       `<div class="v618-copy"><div class="v618-copy-label">${esc(label)}</div><div class="v618-copy-row"><code>${esc(text)}</code><button type="button" class="btn soft" data-copy="${esc(text)}">Kopieren</button></div></div>`;
     el.innerHTML = `<summary><span>Standort-Automatik (iPhone)</span><span style="color:#8e8e93;font-weight:650;font-size:13px">${lastEv ? 'zuletzt ' + esc(dateAT(lastEv.slice(0, 10))) + ' ' + esc(lastEv.slice(11)) : 'nicht eingerichtet'} ›</span></summary>
     <div class="v615-nopark-list v616-guide">
-      <p>Das iPhone meldet Ankunft und Abfahrt an der Ordination automatisch in Dropbox. OrdiPilot übernimmt daraus beim nächsten Sync die Zeiten, legt vergessene Einsätze zum Bestätigen an und erkennt Fahrten „ab Arbeit“. Alles wird nur kopiert und eingefügt (iOS 27, „Kurzbefehl beschreiben“).</p>
-      <p><b>1. Drei Kurzbefehle</b> – je: Kurzbefehle → <b>+</b> → Prompt einfügen → erstellen, dann oben auf den Namen tippen → <b>Umbenennen</b>.</p>
+      <p>Das iPhone meldet Ankunft und Abfahrt an der Ordination automatisch in Dropbox. OrdiPilot übernimmt daraus beim nächsten Sync die Zeiten, legt vergessene Einsätze zum Bestätigen an und erkennt Fahrten „ab Arbeit“ und „ab Zuhause“ samt Fahrzeit. Alles wird nur kopiert und eingefügt (iOS 27, „Kurzbefehl beschreiben“).</p>
+      <p><b>1. Vier Kurzbefehle</b> – je: Kurzbefehle → <b>+</b> → Prompt einfügen → erstellen, dann oben auf den Namen tippen → <b>Umbenennen</b>.</p>
       ${T.shortcuts.map(x => copy('Name', x.name) + copy('Prompt', x.prompt)).join('<hr class="v618-sep">')}
       <p class="help">Prüfen: drei Aktionen – Aktuelles Datum · Datum formatieren · <b>Anfügen</b> mit Dropbox-Symbol, „Neue Zeile erstellen“ an.</p>
-      <p><b>2. Drei Automationen</b> – je: Kurzbefehle → <b>+</b> → Prompt einfügen.</p>
+      <p><b>2. Vier Automationen</b> – je: Kurzbefehle → <b>+</b> → Prompt einfügen.</p>
       ${T.automations.map(x => copy(x.label, x.prompt)).join('')}
       ${state.settings.travelWork ? '' : '<p class="help">Tipp: Unter <b>Honorar → Fahrten</b> den Arbeitsplatz mit Adresse eintragen, dann steht er hier fertig im Prompt.</p>'}
       <p class="help">Prüfen: einzige Aktion ist „OrdiPilot … ausführen“ (keine Karten-Route), Eingabe leer. Setzt iOS den Ort nicht selbst: <b>+</b> → Auslöser <b>Ankommen</b>/<b>Verlassen</b> → Adresse einfügen → <b>Sofort ausführen</b> → Aktion „Kurzbefehl ausführen“.</p>
