@@ -126,3 +126,41 @@ test('Manuelle Kilometer haben Vorrang und werden gekennzeichnet', () => {
   assert.equal(a.km, 51);
   assert.equal(a.custom, true);
 });
+
+test('Parken-Schalter: ohne „zusätzlich“ wird Parken nicht vom Überschuss abgezogen', () => {
+  const parking = [{ id: 'x', date: '2026-09-03', amount: 4.14, entryId: 'a' }];
+  const an = T.yearReport(base({ parking }));
+  const aus = T.yearReport(base({ parking, settings: { recipients: [rec], travelHome: 'Wien', travelParkingExtra: false } }));
+  assert.equal(an.parkingExtra, true);
+  assert.equal(an.totals.surplus, -(4.14 + an.totals.trips));
+  assert.equal(aus.parkingExtra, false);
+  assert.equal(aus.totals.parking, 4.14, 'Belege bleiben sichtbar');
+  assert.equal(aus.totals.parkingDeducted, 0);
+  assert.equal(aus.totals.surplus, -aus.totals.trips);
+});
+
+test('Standortwechsel: Adresse und Kilometer gelten ab dem Stichtag', () => {
+  const r2rec = { ...rec, history: [{ from: '2026-10-01', address: 'Neuweg 9\n2100 Korneuburg', travelKm: 30 }] };
+  const r = T.yearReport(base({ settings: { recipients: [r2rec], travelHome: 'Wien' } }));
+  const byId = Object.fromEntries(r.trips.map((t) => [t.entryId, t]));
+  assert.equal(byId.a.km, 46, 'vor dem Wechsel alte Strecke');
+  assert.equal(byId.c.km, 60, 'ab dem Wechsel neue Strecke');
+  assert.equal(byId.a.via, 'Dr. Muster, Weg 1');
+  assert.equal(byId.c.via, 'Dr. Muster, Neuweg 9');
+});
+
+test('Fahrtenbuch-Felder: Kilometerstand, Quelle, rekonstruiert, Protokoll im Export', () => {
+  const log = [{ at: '2026-11-21T10:00:00Z', field: 'km', from: 46, to: 50, reason: 'Karte geprüft' }];
+  const trips = [{ id: 'trip-a', entryId: 'a', mode: 'car', km: 50, odoStart: 301000, odoEnd: 301050, source: 'Kalender', reconstructed: true, log }];
+  const entries = [e('a', '2026-09-03', 6, { start: '08:00', end: '14:00', geoDepart: '07:20', geoArrive: '07:50' }), e('b', '2026-09-10')];
+  const r = T.yearReport(base({ trips, entries }));
+  const a = r.carTrips.find((t) => t.entryId === 'a');
+  assert.equal(a.odoStart, 301000);
+  assert.equal(a.reconstructed, true);
+  assert.equal(r.reconstructedTrips, 1);
+  const files = T.csvFiles(r);
+  assert.match(files['Fahrten_2026.csv'], /07:20;07:50;08:00;14:00;301000,00;301050,00;Kalender;ja;ja/);
+  assert.match(files['Fahrten_2026.csv'], /;;;;;;nein;nein\r?\n/, 'ohne Angaben bleiben die Felder leer');
+  assert.match(files['Fahrten_Aenderungen_2026.csv'], /Kilometer;46,00;50,00;Karte geprüft/);
+  assert.ok(!T.csvFiles(T.yearReport(base()))['Fahrten_Aenderungen_2026.csv'], 'ohne Änderungen keine Protokolldatei');
+});

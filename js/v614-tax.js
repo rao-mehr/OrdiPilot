@@ -40,6 +40,18 @@
     const recById = id =>
       recipients.find(r => r.id === id) ||
       recipients[0] || { id: defaultRid, name: s.recipientName || '', address: s.recipientAddress || '' };
+    // Standortwechsel eines Empfängers: rec.history = [{ from: 'JJJJ-MM-TT', address, travelKm, travelKmWork }]
+    // Für einen Einsatz gilt der jüngste Eintrag, der spätestens am Einsatztag beginnt.
+    const recAt = (rec, date) => {
+      const h = (Array.isArray(rec.history) ? rec.history : [])
+        .filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.from || '') && x.from <= String(date || ''))
+        .sort((a, b) => a.from.localeCompare(b.from))
+        .pop();
+      if (!h) return rec;
+      const out = { ...rec };
+      for (const k of ['address', 'travelKm', 'travelKmWork']) if (h[k] !== undefined && h[k] !== '') out[k] = h[k];
+      return out;
+    };
     const earned = (input.entries || []).filter(e => e && e.date && fns.isEarned(e));
     const parkingAll = (input.parking || []).filter(p => p && !p.excluded);
     const payments = (input.payments || []).filter(p => p && p.key);
@@ -126,6 +138,10 @@
       const n = Number(String(v ?? '').replace(',', '.'));
       return Number.isFinite(n) && n > 0 ? n : 0;
     };
+    const odoOf = v => {
+      const n = Number(String(v ?? '').replace(',', '.'));
+      return String(v ?? '').trim() !== '' && Number.isFinite(n) && n >= 0 ? n : '';
+    };
     const defStart = s.travelDefaultStart === 'work' ? 'work' : 'car';
     const home =
         s.travelHome ||
@@ -140,7 +156,7 @@
       .filter(e => e.date.startsWith(Y + '-'))
       .sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')))
       .map(e => {
-        const rec = recById(e.recipientId || defaultRid),
+        const rec = recAt(recById(e.recipientId || defaultRid), e.date),
           o = tripByEntry.get(e.id),
           kmHome = kmOf(rec.travelKm),
           kmWork = kmOf(rec.travelKmWork);
@@ -174,6 +190,17 @@
           rate,
           amount: r2(km * rate),
           hasParking: parkedEntries.has(e.id),
+          // Fahrtenbuch-Angaben (optional): Zeiten aus Einsatz bzw. Standort, Kilometerstand nur wenn erfasst
+          departTime: e.geoDepart || '',
+          arriveTime: e.geoArrive || '',
+          startTime: e.start || '',
+          endTime: e.end || '',
+          odoStart: odoOf(o?.odoStart),
+          odoEnd: odoOf(o?.odoEnd),
+          source: o?.source || (o?.auto ? 'Standort' : ''),
+          reconstructed: !!o?.reconstructed,
+          reason: o?.reason || '',
+          log: Array.isArray(o?.log) ? o.log : [],
         };
       });
     const carTrips = trips.filter(t => t.mode !== 'none' && !t.missing);
@@ -202,7 +229,10 @@
       tripKm: r2(carTrips.reduce((t, x) => t + x.km, 0)),
       trips: r2(carTrips.reduce((t, x) => t + x.amount, 0)),
     };
-    totals.expenses = r2(totals.parking + totals.trips + totals.other);
+    // Parkgebühren zusätzlich zum Kilometergeld abziehen? Standard ja (bisheriges Verhalten); die Beurteilung trifft der Steuerberater.
+    const parkingExtra = s.travelParkingExtra !== false;
+    totals.parkingDeducted = parkingExtra ? totals.parking : 0;
+    totals.expenses = r2(totals.parkingDeducted + totals.trips + totals.other);
     totals.surplus = r2(totals.income - totals.expenses);
     return {
       year: Y,
@@ -215,6 +245,11 @@
       parking: parking.map(p => ({ ...p, entryLabel: entryById.get(p.entryId)?.date || '' })),
       trips,
       carTrips,
+      parkingExtra,
+      reconstructedTrips: carTrips.filter(t => t.reconstructed).length,
+      tripLog: carTrips
+        .flatMap(t => t.log.map(l => ({ date: t.date, route: t.route, ...l })))
+        .sort((a, b) => String(a.at).localeCompare(String(b.at))),
       missingKm,
       missingWorkKm,
       fromHome: carTrips.filter(t => t.mode === 'car').length,
@@ -237,6 +272,21 @@
     return /[;"\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   }
   const csv = rows => '﻿' + rows.map(r => r.map(cell).join(';')).join('\r\n') + '\r\n';
+  const LOG_LABELS = {
+    mode: 'Start der Fahrt',
+    km: 'Kilometer',
+    odoStart: 'Kilometerstand Beginn',
+    odoEnd: 'Kilometerstand Ende',
+    source: 'Quelle',
+    reconstructed: 'Rekonstruiert',
+  };
+  const MODE_LABELS = { car: 'ab Wohnung', work: 'ab Arbeit', none: 'kein Auto' };
+  function logValue(field, v) {
+    if (v === null || v === undefined || v === '') return field === 'km' ? 'berechnet' : '';
+    if (field === 'mode') return MODE_LABELS[v] || v;
+    if (field === 'reconstructed') return v === true || v === 'true' ? 'ja' : 'nein';
+    return v;
+  }
   function csvFiles(rep) {
     const Y = rep.year;
     return {
@@ -337,6 +387,15 @@
           'Betrag (EUR)',
           'Kilometer manuell',
           'Parkbeleg vorhanden',
+          'Abfahrt',
+          'Ankunft',
+          'Einsatz von',
+          'Einsatz bis',
+          'Kilometerstand Beginn',
+          'Kilometerstand Ende',
+          'Quelle',
+          'Rekonstruiert',
+          'Geändert',
         ],
         ...rep.carTrips.map(t => [
           dateAT(t.date),
@@ -350,10 +409,58 @@
           t.amount,
           t.custom ? 'ja' : 'nein',
           t.hasParking ? 'ja' : 'nein',
+          t.departTime,
+          t.arriveTime,
+          t.startTime,
+          t.endTime,
+          t.odoStart,
+          t.odoEnd,
+          t.source,
+          t.reconstructed ? 'ja' : 'nein',
+          t.log.length ? 'ja' : 'nein',
         ]),
         [],
-        ['Summe', '', '', '', '', '', rep.totals.tripKm, '', rep.totals.trips, '', ''],
+        [
+          'Summe',
+          '',
+          '',
+          '',
+          '',
+          '',
+          rep.totals.tripKm,
+          '',
+          rep.totals.trips,
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+        ],
       ]),
+      ...(rep.tripLog.length
+        ? {
+            [`Fahrten_Aenderungen_${Y}.csv`]: csv([
+              ['Geändert am', 'Fahrt vom', 'Strecke', 'Feld', 'Vorher', 'Nachher', 'Grund'],
+              ...rep.tripLog.map(l => [
+                String(l.at || '')
+                  .replace('T', ' ')
+                  .slice(0, 16),
+                dateAT(l.date),
+                l.route,
+                LOG_LABELS[l.field] || l.field,
+                logValue(l.field, l.from),
+                logValue(l.field, l.to),
+                l.reason || '',
+              ]),
+            ]),
+          }
+        : {}),
       ...(rep.expenses.length
         ? {
             [`Weitere_Ausgaben_${Y}.csv`]: csv([
@@ -382,7 +489,7 @@
         : {}),
     };
   }
-  root.OrdiPilotTaxCore = { yearReport, csv, csvFiles, paidYear, monthLabel, r2 };
+  root.OrdiPilotTaxCore = { yearReport, csv, csvFiles, paidYear, monthLabel, r2, LOG_LABELS, logValue };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 /* ===== Verdrahtung mit der App ===== */
@@ -397,6 +504,7 @@
   const now = () => new Date().toISOString();
   let year = String(new Date().getFullYear()),
     openPay = null,
+    openTrip = null,
     busy = false,
     statusText = '';
   const openSections = new Set(); // aufgeklappte Bereiche bleiben nach jeder Änderung offen
@@ -462,13 +570,51 @@
   }
 
   // ---- Fahrten ----
-  function setTrip(entryId, patch) {
+  const TRIP_LOGGED = ['mode', 'km', 'odoStart', 'odoEnd', 'source', 'reconstructed'];
+  // prev = Fahrt, wie sie vor der Änderung in der Übersicht stand (berechnete Werte für das Protokoll)
+  function setTrip(entryId, patch, prev) {
     ensure();
     const id = 'trip-' + entryId,
       cur = state.trips.find(t => t.id === id);
-    const next = { ...(cur || { id, entryId }), ...patch, updatedAt: now() };
+    const at = now(),
+      log = [];
+    for (const f of TRIP_LOGGED) {
+      if (!(f in patch)) continue;
+      const before =
+        f === 'km' ? (prev ? prev.km : cur?.km) : f === 'mode' ? (cur?.mode ?? prev?.mode) : (cur?.[f] ?? '');
+      const after = patch[f];
+      if (String(before ?? '') === String(after ?? '')) continue;
+      log.push({ at, field: f, from: before ?? '', to: after ?? '', reason: patch.reason ?? cur?.reason ?? '' });
+    }
+    const next = {
+      ...(cur || { id, entryId }),
+      ...patch,
+      createdAt: cur?.createdAt || at,
+      log: (cur?.log || []).concat(log),
+      updatedAt: at,
+    };
     state.trips = state.trips.filter(t => t.id !== id).concat([next]);
     delete state.deletedTrips[id];
+  }
+  const tripRow = entryId => report().trips.find(x => x.entryId === entryId);
+  const TRIP_SOURCES = ['Live erfasst', 'Standort', 'Kalender', 'Honorarnote', 'Parkbeleg', 'Schätzung'];
+  function tripDetail(x) {
+    const id = esc(x.entryId);
+    const log = x.log
+      .map(
+        l =>
+          `<div class="m">${esc(String(l.at).replace('T', ' ').slice(0, 16))} · ${esc(T.LOG_LABELS[l.field] || l.field)}: ${esc(String(T.logValue(l.field, l.from)) || '–')} → ${esc(String(T.logValue(l.field, l.to)) || '–')}${l.reason ? ' · ' + esc(l.reason) : ''}</div>`
+      )
+      .join('');
+    return `<div class="v614-tripdetail"><div class="v614-form" style="padding-top:0">
+      <label>Kilometerstand Beginn<input type="number" step="1" min="0" inputmode="numeric" data-tripf="odoStart" data-trip="${id}" value="${esc(x.odoStart)}" placeholder="optional"></label>
+      <label>Kilometerstand Ende<input type="number" step="1" min="0" inputmode="numeric" data-tripf="odoEnd" data-trip="${id}" value="${esc(x.odoEnd)}" placeholder="optional"></label>
+      <label>Quelle<select data-tripf="source" data-trip="${id}"><option value="">–</option>${TRIP_SOURCES.map(q => `<option ${x.source === q ? 'selected' : ''}>${q}</option>`).join('')}</select></label>
+      <label>Nachträglich rekonstruiert<select data-tripf="reconstructed" data-trip="${id}"><option value="0" ${x.reconstructed ? '' : 'selected'}>nein</option><option value="1" ${x.reconstructed ? 'selected' : ''}>ja</option></select></label>
+      <label class="full">Grund für Änderungen (wird im Protokoll mitgespeichert)<input data-tripf="reason" data-trip="${id}" value="${esc(x.reason)}" placeholder="z. B. Strecke laut Karten geprüft"></label>
+      ${x.departTime || x.arriveTime ? `<div class="m full">Standort: Abfahrt ${esc(x.departTime || '–')} · Ankunft ${esc(x.arriveTime || '–')}</div>` : ''}
+      ${log ? `<div class="full"><div class="m"><b>Änderungsprotokoll</b></div>${log}</div>` : ''}
+    </div></div>`;
   }
 
   // ---- Oberfläche ----
@@ -492,7 +638,7 @@
 .v614-form .chk{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink)}.v614-form .chk input{min-height:auto;width:18px;height:18px}
 .v614-actions{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1}.v614-trip{grid-template-columns:1fr auto auto}.v614-trip select{min-height:36px;padding:5px 8px;font-size:13px}.v614-trip input{width:74px;min-height:36px;padding:5px 8px;font-size:13px;text-align:right}
 .v614-settings{display:grid;gap:10px;padding:12px 14px;border-top:1px solid var(--line);background:#fafbfd}.v614-settings label{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:650}
-.v614-map{float:right;font-weight:650;color:#0066cc;text-decoration:none}.v614-trip select{max-width:118px}
+.v614-tripdetail{padding:4px 14px 12px;border-top:1px solid #f0f2f6;background:#fafbfc}.v614-hist{padding:8px 0;border-top:1px solid #f0f2f6}.v614-pill[data-tripopen]{background:#eef1f6;color:#44506a;margin-left:4px}.v614-map{float:right;font-weight:650;color:#0066cc;text-decoration:none}.v614-trip select{max-width:118px}
 .v614-buttons{display:grid;gap:8px;margin-top:14px}.v614-status{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px}
 @media(min-width:700px){.v614-buttons{grid-template-columns:1fr 1fr}}`;
     document.head.appendChild(st);
@@ -573,9 +719,9 @@
     const tripRows =
       rep.trips
         .map(
-          x => `<div class="v614-row v614-trip"><div><div class="t">${dateAT(x.date)}${x.hasParking ? ' · <span title="Parkbeleg vorhanden">🅿︎</span>' : ''}</div><div class="m">${x.mode === 'none' ? 'nicht mit dem Auto' : x.missing ? (x.missing === 'work' ? 'Entfernung ab Arbeit fehlt' : 'Entfernung fehlt') : `${String(x.km).replace('.', ',')} km${x.custom ? ' (manuell)' : ''} · ${eur(x.amount)}`}</div></div>
+          x => `<div class="v614-row v614-trip"><div><div class="t">${dateAT(x.date)}${x.hasParking ? ' · <span title="Parkbeleg vorhanden">🅿︎</span>' : ''}${x.reconstructed ? ' · <span title="nachträglich rekonstruiert">⟲</span>' : ''}${x.log.length ? ' · <span title="geändert">✎</span>' : ''} <button type="button" class="v614-pill" data-tripopen="${esc(x.entryId)}" aria-label="Details zur Fahrt">Details</button></div><div class="m">${x.mode === 'none' ? 'nicht mit dem Auto' : x.missing ? (x.missing === 'work' ? 'Entfernung ab Arbeit fehlt' : 'Entfernung fehlt') : `${String(x.km).replace('.', ',')} km${x.custom ? ' (manuell)' : ''} · ${eur(x.amount)}`}</div></div>
       <select data-tripmode="${esc(x.entryId)}" aria-label="Start der Fahrt"><option value="car" ${x.mode === 'car' ? 'selected' : ''}>ab Wohnung</option><option value="work" ${x.mode === 'work' ? 'selected' : ''}>ab Arbeit</option><option value="none" ${x.mode === 'none' ? 'selected' : ''}>kein Auto</option></select>
-      <input type="number" step="1" min="0" inputmode="numeric" data-tripkm="${esc(x.entryId)}" value="${x.mode !== 'none' && x.km ? x.km : ''}" ${x.mode === 'none' ? 'disabled' : ''} placeholder="km" aria-label="Kilometer gesamt"></div>`
+      <input type="number" step="1" min="0" inputmode="numeric" data-tripkm="${esc(x.entryId)}" value="${x.mode !== 'none' && x.km ? x.km : ''}" ${x.mode === 'none' ? 'disabled' : ''} placeholder="km" aria-label="Kilometer gesamt"></div>${openTrip === x.entryId ? tripDetail(x) : ''}`
         )
         .join('') || '<div class="v614-row"><div class="m">Keine abgeschlossenen Einsätze in diesem Jahr.</div></div>';
     const mapsLink = (a, b) =>
@@ -593,7 +739,7 @@
       <div class="v614-sum">
         <div><span>Einnahmen ${year}<small>Zahlungseingang im Jahr (Zuflussprinzip)</small></span><b>${eur(t.income)}</b></div>
         <div><span>Erbrachte Leistungen ${year}<small>${rep.servicesY.length} Abrechnungsmonate${t.open > 0 ? ` · davon offen ${eur(t.open)}` : ''}</small></span><b>${eur(t.services)}</b></div>
-        <div><span>Parkkosten<small>${rep.parking.length} Belege${rep.parkingUnassigned.length ? ` · ${rep.parkingUnassigned.length} ohne Einsatz nicht gezählt (Parken prüfen)` : ''}</small></span><b>− ${eur(t.parking)}</b></div>
+        <div><span>Parkkosten<small>${rep.parking.length} Belege${rep.parkingUnassigned.length ? ` · ${rep.parkingUnassigned.length} ohne Einsatz nicht gezählt (Parken prüfen)` : ''}</small></span><b>${rep.parkingExtra ? '− ' + eur(t.parking) : '(' + eur(t.parking) + ') nicht abgezogen'}</b></div>
         <div><span>Fahrtkosten<small>${rep.carTrips.length} Fahrten${rep.fromWork ? ` (${rep.fromHome} ab Wohnung, ${rep.fromWork} ab Arbeit)` : ''} · ${String(t.tripKm).replace('.', ',')} km × ${String(rep.rate.toFixed(2)).replace('.', ',')} €</small></span><b>− ${eur(t.trips)}</b></div>
         ${s.expensesEnabled ? `<div><span>Weitere Betriebsausgaben<small>${rep.expenses.length} Posten</small></span><b>− ${eur(t.other)}</b></div>` : ''}
         <div class="v614-total"><span>Vorläufiger Überschuss</span><b>${signed(t.surplus)}</b></div>
@@ -622,6 +768,14 @@
             })
             .join('')}
           <label>Standard-Start für Fahrten<select id="v614DefStart"><option value="car" ${s.travelDefaultStart !== 'work' ? 'selected' : ''}>ab Wohnung (hin und zurück)</option><option value="work" ${s.travelDefaultStart === 'work' ? 'selected' : ''}>ab Arbeitsplatz (danach nach Hause)</option></select></label>
+          <label>Parkgebühren zusätzlich zum Kilometergeld abziehen<select id="v614ParkExtra"><option value="1" ${rep.parkingExtra ? 'selected' : ''}>ja (bisher)</option><option value="0" ${rep.parkingExtra ? '' : 'selected'}>nein – im Kilometergeld enthalten</option></select></label>
+          <div class="help">Steuerlich offen: ob Parkgebühren neben dem Kilometergeld absetzbar sind, klärt der Steuerberater. Mit „nein“ bleiben die Parkbelege in der Liste, werden aber nicht vom Überschuss abgezogen.</div>
+          ${usedRecs
+            .map(
+              r => `<div class="v614-hist" data-histbox="${esc(r.id)}"><div class="m"><b>Standortwechsel ${esc(r.name || 'Ordination')}</b>${(r.history || []).length ? ': ' + r.history.map(h => `ab ${dateAT(h.from)}${h.address ? ' ' + esc(String(h.address).split('\n')[0]) : ''}${h.travelKm !== undefined && h.travelKm !== '' ? ' · ' + String(h.travelKm).replace('.', ',') + ' km' : ''} <a href="#" data-histdel="${esc(r.id)}|${esc(h.from)}">entfernen</a>`).join('; ') : ' (keiner erfasst)'}</div>
+              <div class="v614-form" style="padding-top:4px"><label>Gültig ab<input type="date" data-histfrom></label><label>Neue Adresse<input data-histaddr placeholder="Straße, PLZ Ort"></label><label>Wohnung → neu (km)<input type="number" step="0.1" min="0" inputmode="decimal" data-histkm></label><label>Arbeit → neu (km)<input type="number" step="0.1" min="0" inputmode="decimal" data-histkmwork></label><div class="v614-actions"><button class="btn soft" data-histadd="${esc(r.id)}">Standortwechsel speichern</button></div></div></div>`
+            )
+            .join('')}
           <label>Kilometergeld (€/km)<input id="v614Rate" type="number" step="0.01" min="0" inputmode="decimal" value="${esc(s.travelRate ?? '0.50')}"></label>
           <div class="help">Pro Einsatz gilt der Standard-Start; abweichende Tage unten auf „ab Wohnung“, „ab Arbeit“ oder „kein Auto“ stellen. Ab Arbeit = Arbeitsplatz → Ordination → Wohnung. Kilometer pro Tag lassen sich direkt überschreiben. „Route prüfen“ öffnet die Strecke in Karten. 🅿︎ = Parkbeleg vorhanden.</div>
           <div class="help">Steuerlich offen: ob bei Fahrten ab dem Arbeitsplatz die ganze Strecke oder nur der Umweg gegenüber dem normalen Heimweg zählt – das klärt der Steuerberater. Die App dokumentiert die tatsächlich gefahrene Strecke.</div>
@@ -688,7 +842,18 @@
         return;
       }
       if (t.dataset.tripmode) {
-        setTrip(t.dataset.tripmode, { mode: t.value, km: null });
+        setTrip(t.dataset.tripmode, { mode: t.value, km: null }, tripRow(t.dataset.tripmode));
+        save();
+        return;
+      }
+      if (t.dataset.tripf) {
+        const f = t.dataset.tripf,
+          id = t.dataset.trip;
+        let v = t.value.trim();
+        if (f === 'reconstructed') v = v === '1';
+        else if (f === 'odoStart' || f === 'odoEnd') v = v === '' ? '' : Number(v.replace(',', '.'));
+        if (typeof v === 'number' && !Number.isFinite(v)) return;
+        setTrip(id, { [f]: v }, tripRow(id));
         save();
         return;
       }
@@ -696,7 +861,11 @@
         const v = t.value.trim(),
           sel = t.parentElement.querySelector('[data-tripmode]'),
           m = sel && sel.value !== 'none' ? sel.value : 'car';
-        setTrip(t.dataset.tripkm, { mode: m, km: v === '' ? null : Number(v.replace(',', '.')) });
+        setTrip(
+          t.dataset.tripkm,
+          { mode: m, km: v === '' ? null : Number(v.replace(',', '.')) },
+          tripRow(t.dataset.tripkm)
+        );
         save();
         return;
       }
@@ -736,6 +905,12 @@
         save();
         return;
       }
+      if (t.id === 'v614ParkExtra') {
+        state.settings.travelParkingExtra = t.value !== '0';
+        touchSettings();
+        save();
+        return;
+      }
       if (t.id === 'v614Rate') {
         const v = Number(String(t.value).replace(',', '.'));
         state.settings.travelRate = v > 0 ? v : 0.5;
@@ -755,8 +930,52 @@
       }
     });
     el.addEventListener('click', ev => {
+      const hd = ev.target.closest('a[data-histdel]');
+      if (hd) {
+        ev.preventDefault();
+        const [rid, from] = hd.dataset.histdel.split('|');
+        const r = (state.settings.recipients || []).find(x => x.id === rid);
+        if (r && confirm('Standortwechsel entfernen?')) {
+          r.history = (r.history || []).filter(h => h.from !== from);
+          touchSettings();
+          save();
+        }
+        return;
+      }
       const b = ev.target.closest('button');
       if (!b) return;
+      if (b.dataset.tripopen) {
+        openTrip = openTrip === b.dataset.tripopen ? null : b.dataset.tripopen;
+        openSections.add('v614Trips');
+        render();
+        return;
+      }
+      if (b.dataset.histadd) {
+        const box = b.closest('[data-histbox]'),
+          r = (state.settings.recipients || []).find(x => x.id === b.dataset.histadd);
+        const from = box.querySelector('[data-histfrom]').value,
+          addr = box.querySelector('[data-histaddr]').value.trim(),
+          num = sel => {
+            const v = box.querySelector(sel).value.trim();
+            return v === '' ? '' : Number(v.replace(',', '.'));
+          };
+        if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(from)) {
+          alert('Bitte das Datum angeben, ab dem der neue Standort gilt.');
+          return;
+        }
+        const km = num('[data-histkm]'),
+          kmWork = num('[data-histkmwork]');
+        if (!addr && km === '' && kmWork === '') {
+          alert('Bitte Adresse oder Kilometer des neuen Standorts eingeben.');
+          return;
+        }
+        r.history = (r.history || [])
+          .filter(h => h.from !== from)
+          .concat([{ from, address: addr, travelKm: km, travelKmWork: kmWork, changedAt: now() }]);
+        touchSettings();
+        save();
+        return;
+      }
       if (b.dataset.pay !== undefined) {
         openPay = openPay === b.dataset.pay ? null : b.dataset.pay;
         render();
@@ -927,7 +1146,10 @@
     y -= 26;
     const sumRows = [
       [`Einnahmen ${rep.year} (Zahlungseingang)`, t.income],
-      [`Parkkosten (${rep.parking.length} Belege)`, -t.parking],
+      [
+        `Parkkosten (${rep.parking.length} Belege${rep.parkingExtra ? '' : ', nicht abgezogen – im Kilometergeld enthalten'})`,
+        -t.parkingDeducted,
+      ],
       [
         `Fahrtkosten (${rep.carTrips.length} Fahrten${rep.fromWork ? `, davon ${rep.fromWork} ab Arbeitsplatz` : ''}, ${String(t.tripKm).replace('.', ',')} km × ${rep.rate.toFixed(2).replace('.', ',')} €)`,
         -t.trips,
@@ -1049,10 +1271,19 @@
         (rep.expenses.length ? `, Weitere_Ausgaben_${rep.year}.csv` : ''),
       `Honorarnoten, Parkbelege, Zahlungsnachweise${hasKi ? ' und KI-Belege' : ''} als PDF in den Unterordnern dieses Steuerpakets.`,
       'Fahrten: Wohnung – Ordination – Wohnung bzw. Arbeitsplatz – Ordination – Wohnung (tatsächliche Strecke), Kilometergeld lt. obigem Satz.',
+      rep.parkingExtra
+        ? 'Parkgebühren sind zusätzlich zum Kilometergeld abgezogen; ob das zulässig ist, beurteilt der Steuerberater.'
+        : 'Parkgebühren sind nicht zusätzlich zum Kilometergeld abgezogen (siehe Parkkosten_' + rep.year + '.csv).',
+      rep.reconstructedTrips
+        ? `${rep.reconstructedTrips} Fahrten sind nachträglich rekonstruiert (Spalte „Rekonstruiert“ und „Quelle“ in Fahrten_${rep.year}.csv).`
+        : '',
+      rep.tripLog.length
+        ? `Änderungen an Fahrten sind in Fahrten_Aenderungen_${rep.year}.csv mit Zeitstempel protokolliert.`
+        : '',
       rep.expenses.length
         ? 'Vorläufige Aufstellung; betriebliche Anteile gemischt genutzter Ausgaben und steuerliche Beurteilung durch den Steuerberater.'
         : 'Vorläufige Aufstellung ohne weitere Betriebsausgaben; steuerliche Beurteilung durch den Steuerberater.',
-    ]) {
+    ].filter(Boolean)) {
       need(13);
       text(L, l, 9, reg, grey);
       y -= 13;
@@ -1147,7 +1378,12 @@
         `Einnahmen_${rep.year}.csv – Zahlungseingänge (Zuflussprinzip)`,
         `Leistungen_${rep.year}.csv – erbrachte Leistungen und offene Posten`,
         `Parkkosten_${rep.year}.csv – Parkbelege`,
-        `Fahrten_${rep.year}.csv – Fahrten mit Kilometergeld`,
+        `Fahrten_${rep.year}.csv – Fahrten mit Kilometergeld (Zeiten, Kilometerstand, Quelle, rekonstruiert, geändert)`,
+        ...(rep.tripLog.length
+          ? [
+              `Fahrten_Aenderungen_${rep.year}.csv – Änderungsprotokoll der Fahrten (vorher/nachher, Zeitstempel, Grund)`,
+            ]
+          : []),
         ...(rep.expenses.length
           ? [`Weitere_Ausgaben_${rep.year}.csv – weitere Betriebsausgaben mit betrieblichem Anteil`]
           : []),
