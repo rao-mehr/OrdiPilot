@@ -348,6 +348,18 @@ def main():
         t2 = next(t for t in page.evaluate("()=>ordipilotTax.report()")["trips"] if t["entryId"] == eid2)
         check("Manuelle km behalten den Start ab Arbeit", t2["mode"] == "work" and t2["km"] == 52 and t2["custom"])
         check("Überschuss = Einnahmen − Parken − Fahrten", abs(rep["totals"]["surplus"] - (rep["totals"]["income"] - rep["totals"]["parking"] - rep["totals"]["trips"])) < 0.01)
+        # Fahrtenbuch: Details, Kilometerstand, Protokoll, Parken-Schalter
+        page.click(f"[data-tripopen='{eid2}']")
+        page.fill(f"[data-trip='{eid2}'][data-tripf=odoStart]", "301000"); page.locator(f"[data-trip='{eid2}'][data-tripf=odoStart]").dispatch_event("change")
+        page.select_option(f"[data-trip='{eid2}'][data-tripf=reconstructed]", "1")
+        t2 = next(t for t in page.evaluate("()=>ordipilotTax.report()")["trips"] if t["entryId"] == eid2)
+        check("Kilometerstand und „rekonstruiert“ gespeichert", t2["odoStart"] == 301000 and t2["reconstructed"] is True, str(t2)[:200])
+        check("Änderungen sind protokolliert (Vorher/Nachher)", any(l["field"] == "km" and l["to"] == 52 for l in t2["log"]) and any(l["field"] == "mode" for l in t2["log"]), str(t2["log"])[:300])
+        before = page.evaluate("()=>ordipilotTax.report().totals")
+        page.select_option("#v614ParkExtra", "0")
+        after = page.evaluate("()=>ordipilotTax.report().totals")
+        check("Parken-Schalter „nein“: Belege bleiben, Abzug entfällt", after["parking"] == before["parking"] and after["parkingDeducted"] == 0 and abs(after["surplus"] - (before["surplus"] + before["parking"])) < 0.01, str(after))
+        page.select_option("#v614ParkExtra", "1")
         # Sync behält Zahlungen und Fahrten
         ok = page.evaluate("()=>syncWithDropbox({interactive:true})")
         cl = dbx.get(DATA)

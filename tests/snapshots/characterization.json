@@ -118,6 +118,8 @@
     "date": "2026-10-20",
     "end": "12:30",
     "geoArrive": "08:52",
+    "geoDepart": "",
+    "geoDepartFrom": "",
     "geoFromWork": false,
     "geoLeave": "12:41",
     "id": "e8",
@@ -136,6 +138,8 @@
     "date": "2026-10-27",
     "end": "",
     "geoArrive": "09:55",
+    "geoDepart": "09:10",
+    "geoDepartFrom": "work",
     "geoFromWork": true,
     "geoLeave": "12:35",
     "id": "e9",
@@ -512,6 +516,8 @@
     "date": "2026-10-20",
     "end": "12:30",
     "geoArrive": "08:52",
+    "geoDepart": "",
+    "geoDepartFrom": "",
     "geoFromWork": false,
     "geoLeave": "12:41",
     "id": "e8",
@@ -530,6 +536,8 @@
     "date": "2026-10-27",
     "end": "",
     "geoArrive": "09:55",
+    "geoDepart": "09:10",
+    "geoDepartFrom": "work",
     "geoFromWork": true,
     "geoLeave": "12:35",
     "id": "e9",
@@ -980,7 +988,7 @@
    "token": "geheim"
   }
  ],
- "header_footer": "Version 7.6.1 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.",
+ "header_footer": "Version 7.6.2 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.",
  "invoice_08_button": {
   "disabled": false,
   "text": "Honorarnote erstellen & senden"
@@ -2697,6 +2705,6 @@
    "v751Import",
    "v751Status"
   ],
-  "text": "Einstellungen\nVersion 7.6.1 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.\nABRECHNUNG & HONORAR\nAbrechnung\nStundensatz, Rücklage und steuerliche Hinweise\n›\nMeine Rechnungsdaten\nAbsender, Bank- und Steuerdaten\n›\nRechnungsempfänger\nEmpfänger, Anrede und Honorarnoten-Texte verwalten\n›\nHonorarnote · Versand\nVersand, Ablage und Kurzbefehl\n›\nEINSÄTZE\nZeitprofile für Einsätze\nVormittag, Nachmittag und Ganztag\n›\nVERBINDUNGEN\nDropbox-Synchronisierung\nDaten zwischen Geräten synchronisieren\n›\nEasyPark-Automatik\nParkbelege automatisch übernehmen\n›\nApple Kalender · Vertretungen\nKalender-Synchronisierung und Navigation\n›\nDienstplan (Klinik)\nName, Dienstplan-PDF und Kalender\n›\nWEITERE\niPhone / iPad\nEinstellungen\n›"
+  "text": "Einstellungen\nVersion 7.6.2 · OrdiPilot · EasyPark-Folderscan · individuelle Zeiten pro Einsatz · Kalender · Honorarnoten · Dropbox · mobile PWA.\nABRECHNUNG & HONORAR\nAbrechnung\nStundensatz, Rücklage und steuerliche Hinweise\n›\nMeine Rechnungsdaten\nAbsender, Bank- und Steuerdaten\n›\nRechnungsempfänger\nEmpfänger, Anrede und Honorarnoten-Texte verwalten\n›\nHonorarnote · Versand\nVersand, Ablage und Kurzbefehl\n›\nEINSÄTZE\nZeitprofile für Einsätze\nVormittag, Nachmittag und Ganztag\n›\nVERBINDUNGEN\nDropbox-Synchronisierung\nDaten zwischen Geräten synchronisieren\n›\nEasyPark-Automatik\nParkbelege automatisch übernehmen\n›\nApple Kalender · Vertretungen\nKalender-Synchronisierung und Navigation\n›\nDienstplan (Klinik)\nName, Dienstplan-PDF und Kalender\n›\nWEITERE\niPhone / iPad\nEinstellungen\n›"
  }
 }
