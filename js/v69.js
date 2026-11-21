@@ -72,6 +72,18 @@
         return { added: 0, updated: 0, total: 0 };
       }
       const result = mergeEasyParkImport(JSON.parse(await blob.text()));
+      // Nachträge (manuell geprüfte Belege, z.B. aus Rechnungen/PDFs) liegen in easypark-nachtrag.json neben der Automatik-Datei.
+      try {
+        const extra = await dbxDownload(path.replace(/easypark\.json$/i, 'easypark-nachtrag.json'));
+        if (extra) {
+          const r2 = mergeEasyParkImport(JSON.parse(await extra.text()));
+          result.added += r2.added;
+          result.updated += r2.updated;
+          result.total += r2.total;
+        }
+      } catch (e) {
+        console.warn('Nachtrag-Import übersprungen', e);
+      }
       easyParkStatus.textContent = `${result.total} Datensätze verfügbar · ${result.added} neu · ${result.updated} aktualisiert`;
       easyParkDot.className = 'dot on';
       if (showResult)
