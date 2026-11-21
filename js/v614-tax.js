@@ -587,7 +587,7 @@
       log.push({ at, field: f, from: before ?? '', to: after ?? '', reason: patch.reason ?? cur?.reason ?? '' });
     }
     const next = {
-      ...(cur || { id, entryId }),
+      ...(cur || { id, entryId, km: null }),
       ...patch,
       createdAt: cur?.createdAt || at,
       log: (cur?.log || []).concat(log),
@@ -597,7 +597,7 @@
     delete state.deletedTrips[id];
   }
   const tripRow = entryId => report().trips.find(x => x.entryId === entryId);
-  const TRIP_SOURCES = ['Live erfasst', 'Standort', 'Kalender', 'Honorarnote', 'Parkbeleg', 'Schätzung'];
+  const TRIP_SOURCES = ['Live erfasst', 'Standort', 'Dienstplan', 'Kalender', 'Honorarnote', 'Parkbeleg', 'Schätzung'];
   function tripDetail(x) {
     const id = esc(x.entryId);
     const log = x.log
@@ -776,6 +776,11 @@
               <div class="v614-form" style="padding-top:4px"><label>Gültig ab<input type="date" data-histfrom></label><label>Neue Adresse<input data-histaddr placeholder="Straße, PLZ Ort"></label><label>Wohnung → neu (km)<input type="number" step="0.1" min="0" inputmode="decimal" data-histkm></label><label>Arbeit → neu (km)<input type="number" step="0.1" min="0" inputmode="decimal" data-histkmwork></label><div class="v614-actions"><button class="btn soft" data-histadd="${esc(r.id)}">Standortwechsel speichern</button></div></div></div>`
             )
             .join('')}
+          <div class="v614-hist" id="v614PlanBox"><div class="m"><b>Fahrten aus Dienstplan setzen</b></div>
+            <div class="help">Trage die Tage ein, an denen ein 25-Stunden-Dienst begann (Datum JJJJ-MM-TT oder TT.MM.JJJJ, eine Angabe pro Zeile oder mit Komma). Einsätze am Tag danach bekommen „ab Arbeit“, alle übrigen „ab Wohnung“. Fahrten, die schon manuell oder per Standort erfasst sind, bleiben unverändert. Die Änderungen werden als „rekonstruiert“ (Quelle „Dienstplan“) protokolliert.</div>
+            <textarea id="v614PlanDays" rows="4" placeholder="2026-02-24&#10;2026-03-10" style="width:100%"></textarea>
+            <div class="v614-actions"><button class="btn soft" data-planrun="preview">Vorschau</button><button class="btn" data-planrun="apply">Anwenden</button></div>
+            <div class="m" id="v614PlanOut"></div></div>
           <label>Kilometergeld (€/km)<input id="v614Rate" type="number" step="0.01" min="0" inputmode="decimal" value="${esc(s.travelRate ?? '0.50')}"></label>
           <div class="help">Pro Einsatz gilt der Standard-Start; abweichende Tage unten auf „ab Wohnung“, „ab Arbeit“ oder „kein Auto“ stellen. Ab Arbeit = Arbeitsplatz → Ordination → Wohnung. Kilometer pro Tag lassen sich direkt überschreiben. „Route prüfen“ öffnet die Strecke in Karten. 🅿︎ = Parkbeleg vorhanden.</div>
           <div class="help">Steuerlich offen: ob bei Fahrten ab dem Arbeitsplatz die ganze Strecke oder nur der Umweg gegenüber dem normalen Heimweg zählt – das klärt der Steuerberater. Die App dokumentiert die tatsächlich gefahrene Strecke.</div>
@@ -948,6 +953,60 @@
         openTrip = openTrip === b.dataset.tripopen ? null : b.dataset.tripopen;
         openSections.add('v614Trips');
         render();
+        return;
+      }
+      if (b.dataset.planrun) {
+        const box = b.closest('#v614PlanBox'),
+          out = box.querySelector('#v614PlanOut'),
+          days = new Set();
+        for (const tok of box
+          .querySelector('#v614PlanDays')
+          .value.split(/[\s,;]+/)
+          .filter(Boolean)) {
+          const m1 = tok.match(/^(\d{4})-(\d{2})-(\d{2})$/),
+            m2 = tok.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+          if (m1) days.add(tok);
+          else if (m2) days.add(`${m2[3]}-${m2[2].padStart(2, '0')}-${m2[1].padStart(2, '0')}`);
+        }
+        if (!days.size) {
+          out.textContent = 'Bitte mindestens ein Datum eintragen.';
+          return;
+        }
+        const dayBefore = d => {
+          const x = new Date(d + 'T12:00:00Z');
+          x.setUTCDate(x.getUTCDate() - 1);
+          return x.toISOString().slice(0, 10);
+        };
+        const have = new Set(state.trips.map(t => t.entryId));
+        const rows = report().trips,
+          todo = rows.filter(r => !have.has(r.entryId)),
+          work = todo.filter(r => days.has(dayBefore(r.date)));
+        if (b.dataset.planrun === 'preview') {
+          out.textContent = `${days.size} Dienste gelesen. ${todo.length} Fahrten werden gesetzt: ${work.length} ab Arbeit, ${todo.length - work.length} ab Wohnung. ${rows.length - todo.length} bereits erfasste Fahrten bleiben unverändert.`;
+          return;
+        }
+        if (!todo.length) {
+          out.textContent = 'Keine Fahrt zu ändern.';
+          return;
+        }
+        if (
+          !confirm(`${todo.length} Fahrten setzen (${work.length} ab Arbeit, ${todo.length - work.length} ab Wohnung)?`)
+        )
+          return;
+        for (const r of todo) {
+          const fromWork = days.has(dayBefore(r.date));
+          setTrip(
+            r.entryId,
+            {
+              mode: fromWork ? 'work' : 'car',
+              source: 'Dienstplan',
+              reconstructed: true,
+              reason: fromWork ? 'Dienstplan: Klinikdienst am Vortag' : 'Dienstplan: kein Klinikdienst am Vortag',
+            },
+            r
+          );
+        }
+        save();
         return;
       }
       if (b.dataset.histadd) {

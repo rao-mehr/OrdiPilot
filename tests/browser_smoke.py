@@ -4,6 +4,7 @@ Start:  python3 tests/browser_smoke.py
 Optional mit echten Daten (bleiben lokal, werden nie committet):
         REAL_DATA=/pfad/daten.json REAL_BACKUP=/pfad/backup.json python3 tests/browser_smoke.py
 """
+import re
 import json, os, re, shutil, subprocess, sys, tempfile, threading, time, http.server, functools, datetime
 from playwright.sync_api import sync_playwright
 
@@ -360,10 +361,25 @@ def main():
         after = page.evaluate("()=>ordipilotTax.report().totals")
         check("Parken-Schalter „nein“: Belege bleiben, Abzug entfällt", after["parking"] == before["parking"] and after["parkingDeducted"] == 0 and abs(after["surplus"] - (before["surplus"] + before["parking"])) < 0.01, str(after))
         page.select_option("#v614ParkExtra", "1")
+        # Dienstplan: Folgetag eines 25-h-Dienstes = ab Arbeit, sonst ab Wohnung; vorhandene Fahrten bleiben
+        open_rows = page.evaluate("()=>{const have=new Set(state.trips.map(t=>t.entryId));return ordipilotTax.report().trips.filter(r=>!have.has(r.entryId)).map(r=>[r.entryId,r.date])}")
+        check("Es gibt Fahrten ohne Datensatz für den Dienstplan-Test", len(open_rows) >= 2, str(open_rows)[:120])
+        import datetime as _dt
+        first_id, first_date = open_rows[0]
+        duty = (_dt.date.fromisoformat(first_date) - _dt.timedelta(days=1)).isoformat()
+        page.locator("#v614PlanDays").fill(duty)
+        page.click("[data-planrun=preview]")
+        check("Dienstplan-Vorschau zählt ab Arbeit / ab Wohnung", re.search(r"[1-9]\d* ab Arbeit", page.inner_text("#v614PlanOut")) is not None, page.inner_text("#v614PlanOut")[:160])
+        page.click("[data-planrun=apply]")
+        rows_after = {r["entryId"]: r for r in page.evaluate("()=>ordipilotTax.report().trips")}
+        r0 = rows_after[first_id]
+        check("Dienstplan: Folgetag = ab Arbeit, rekonstruiert, Quelle Dienstplan", r0["mode"] == "work" and r0["reconstructed"] is True and r0["source"] == "Dienstplan", str(r0)[:200])
+        r1 = rows_after[next(i for i, d in open_rows if d != first_date)]
+        check("Dienstplan: übrige Einsätze = ab Wohnung", r1["mode"] == "car" and r1["reconstructed"] is True, str(r1)[:200])
         # Sync behält Zahlungen und Fahrten
         ok = page.evaluate("()=>syncWithDropbox({interactive:true})")
         cl = dbx.get(DATA)
-        check("Sync überträgt Zahlungen und Fahrten", ok and len(cl.get("payments", [])) == len(page.evaluate("()=>state.payments")) and len(cl.get("trips", [])) == 2)
+        check("Sync überträgt Zahlungen und Fahrten", ok and len(cl.get("payments", [])) == len(page.evaluate("()=>state.payments")) and len(cl.get("trips", [])) == len(page.evaluate("()=>state.trips")) and len(cl.get("trips", [])) >= 2)
         # Export
         page.click("#v614Export")
         page.wait_for_function("()=>/Steuerpaket erstellt|nicht erstellt/.test(document.getElementById('v614Status').textContent)", timeout=20000)
